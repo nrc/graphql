@@ -8,15 +8,14 @@ use types::{query, result, schema};
 
 pub mod types;
 pub mod execution;
-mod lexer;
-mod parse_query;
+mod parser;
 
 pub type QlResult<T> = Result<T, QlError>;
 
 // FIXME use Failure
 #[derive(Debug)]
 pub enum QlError {
-    LexError(lexer::LexError),
+    LexError(parser::lexer::LexError),
     ParseError(ParseError),
     ValidationError,
     ExecutionError(String),

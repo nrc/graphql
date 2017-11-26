@@ -7,8 +7,8 @@
 // }
 
 use {ParseError, QlResult, QlError};
-use lexer::tokenise;
-use lexer::token::{Atom, Bracket, Token, TokenKind};
+use parser::lexer::tokenise;
+use parser::token::{Atom, Bracket, Token, TokenKind};
 use query::{Field, Query, Value};
 use types::{Id, Name};
 

@@ -1,12 +1,10 @@
 use {QlError, QlResult};
-pub use self::token::{Token};
-use self::token::{Atom, Bracket, TokenKind};
+use parser::token::{Atom, Bracket, Token, TokenKind};
 
 use std::iter::Peekable;
 use std::mem;
 use std::str::{CharIndices, FromStr};
 
-pub mod token;
 
 pub fn tokenise<'a>(input: &'a str) -> QlResult<Vec<Token<'a>>> {
     let lexer = Lexer::new(input);
