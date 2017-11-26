@@ -11,7 +11,7 @@ pub fn tokenise<'a>(input: &'a str) -> QlResult<Vec<Token<'a>>> {
     lexer.tokenise()
 } 
 
-pub type Span = ::rls_span::Span<::rls_span::ZeroIndexed>;
+// pub type Span = ::rls_span::Span<::rls_span::ZeroIndexed>;
 
 // TODO should be able to track multiple errors
 #[derive(Clone, Debug)]
@@ -88,11 +88,11 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        for tree in &self.tree_stack {
+        for _tree in &self.tree_stack {
             // TODO each tree is an unclosed delimiter error
         }
 
-        if let Some(s) = self.string {
+        if let Some(_s) = self.string {
             // TODO unclosed string
         }
 
@@ -129,7 +129,7 @@ impl<'a> Lexer<'a> {
     where
         F: Fn(char) -> bool,
     {
-        while let Some(&(i, c)) = self.iter.peek() {
+        while let Some(&(_, c)) = self.iter.peek() {
             if !f(c) {
                 break;
             }

@@ -10,7 +10,7 @@ use {ParseError, QlResult, QlError};
 use parser::lexer::tokenise;
 use parser::token::{Atom, Bracket, Token, TokenKind};
 use query::{Field, Query, Value};
-use types::{Id, Name};
+use types::Name;
 
 pub fn parse_query(input: &str) -> QlResult<Query> {
     let tokens = tokenise(input.trim())?;
@@ -47,11 +47,7 @@ impl<'a> Parser<'a> {
         self.tokens = &self.tokens[1..];
     }
 
-    fn peek_tok(&mut self) -> QlResult<&'a Token<'a>> {
-        self.maybe_peek_tok().ok_or(QlError::ParseError(ParseError("Unexpected end of stream")))
-    }
-
-    fn maybe_peek_tok(&mut self) -> Option<&'a Token<'a>> {
+    fn peek_tok(&mut self) -> Option<&'a Token<'a>> {
         self.tokens.get(0)
     }
 
@@ -63,7 +59,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_eat(&mut self, atom: Atom<'a>) {
-        if let Some(tok) = self.maybe_peek_tok() {
+        if let Some(tok) = self.peek_tok() {
             if let TokenKind::Atom(a) = tok.kind {
                 if a == atom {
                     self.bump();
@@ -73,7 +69,7 @@ impl<'a> Parser<'a> {
     }
 
     fn ignore_newlines(&mut self) {
-        while let Some(tok) = self.maybe_peek_tok() {
+        while let Some(tok) = self.peek_tok() {
             match tok.kind {
                 TokenKind::Atom(Atom::NewLine) => self.bump(),
                 _ => return,
@@ -120,7 +116,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_parse_field(&mut self) -> QlResult<Option<Field>> {
-        match self.maybe_peek_tok() {
+        match self.peek_tok() {
             None => Ok(None),
             Some(&Token { kind: TokenKind::Atom(Atom::Name(_))}) => Ok(Some(self.parse_field()?)),
             _ => parse_err!("Unexpected token, expected: field"),
@@ -149,7 +145,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_parse_args(&mut self) -> QlResult<Vec<(Name, Value)>> {
-        if let Some(tok) = self.maybe_peek_tok() {
+        if let Some(tok) = self.peek_tok() {
             if let TokenKind::Tree(Bracket::Paren, ref toks) = tok.kind {
                 self.bump();
                 return Parser::new(toks)?.parse_arg_list();
@@ -173,7 +169,7 @@ impl<'a> Parser<'a> {
 
     // TODO this and parse_arg_list should be generic with fields
     fn maybe_parse_arg(&mut self) -> QlResult<Option<(Name, Value)>> {
-        match self.maybe_peek_tok() {
+        match self.peek_tok() {
             None => Ok(None),
             Some(&Token { kind: TokenKind::Atom(Atom::Name(_))}) => Ok(Some(self.parse_arg()?)),
             _ => parse_err!("Unexpected token, expected: name"),
@@ -190,7 +186,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_parse_fields(&mut self) -> QlResult<Vec<Field>> {
-        if let Some(tok) = self.maybe_peek_tok() {
+        if let Some(tok) = self.peek_tok() {
             if let TokenKind::Tree(Bracket::Brace, ref toks) = tok.kind {
                 self.bump();
                 return Parser::new(toks)?.parse_field_list();
@@ -229,7 +225,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_parse_value(&mut self) -> QlResult<Option<Value>> {
-        match self.maybe_peek_tok() {
+        match self.peek_tok() {
             None => Ok(None),
             Some(&Token { kind: TokenKind::Atom(Atom::Name(_))})
                 | Some(&Token { kind: TokenKind::Atom(Atom::String(_))})

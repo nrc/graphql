@@ -9,6 +9,7 @@ query {
 }
 */
 use {QlResult, QlError};
+use parser::parse_query::parse_query;
 use types::{Name, Id, result, schema};
 
 // TODO variables, directives
@@ -41,17 +42,19 @@ pub trait Root: result::Resolve {
     fn make_schema() -> schema::Schema;
 }
 
-// TODO
 impl Query {
     pub fn parse(input: &str) -> QlResult<Query> {
+        parse_query(input)
+    }
+
+    pub fn validate(&self, _schema: &schema::Schema) -> QlResult<()> {
+        // TODO (and we will need to return some type infor about the query I think, or save that in self)
+        // FIXME should generate validation statically, rather than using the dynamic schema
         unimplemented!();
     }
 
-    pub fn validate(&self, schema: &schema::Schema) -> QlResult<()> {
-        unimplemented!();
-    }
-
-    pub fn execute<R: Root>(&self, schema: &schema::Schema, root: R) -> QlResult<result::Value> {
+    // TODO don't need schema to execute?
+    pub fn execute<R: Root>(&self, _schema: &schema::Schema, root: R) -> QlResult<result::Value> {
         match *self {
             Query::Query(ref fields) => root.resolve(fields),
             _ => unimplemented!(),
