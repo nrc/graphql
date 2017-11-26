@@ -34,9 +34,11 @@ type Human implements Character {
 */
 
 use QlResult;
-use types::{Name, query, result};
+use types::{query, result};
 
 use std::collections::HashMap;
+
+pub type Name = &'static str;
 
 #[derive(Clone, Debug)]
 pub struct Schema {
@@ -49,12 +51,18 @@ impl Schema {
             items: HashMap::new(),
         }
     }
+
+    pub fn validate(&self) -> QlResult<()> {
+        // TODO
+        unimplemented!();
+    }
 }
 
+// QUESTION Reflect and Resolve should probably be elsewhere
 pub trait Reflect {
-    // Should return a Result since coercion could fail
-    fn schema(&self) -> Item;
-    fn name(&self) -> Name;
+    fn schema() -> Item;
+    // TODO should be assoc const
+    fn name() -> Name;
 }
 
 pub trait ResolveObject: Reflect + result::Resolve {

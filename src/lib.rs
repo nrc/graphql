@@ -1,15 +1,23 @@
-#![feature(conservative_impl_trait)]
-#![feature(try_from)]
 #![feature(decl_macro)]
-#![feature(specialization)]
+#![feature(associated_type_defaults)]
+
+extern crate rls_span;
 
 use std::error::Error;
+use types::{query, result, schema};
+
+pub mod types;
+pub mod execution;
+mod lexer;
+mod parse_query;
 
 pub type QlResult<T> = Result<T, QlError>;
 
+// FIXME use Failure
 #[derive(Debug)]
 pub enum QlError {
-    ParseError,
+    LexError(lexer::LexError),
+    ParseError(ParseError),
     ValidationError,
     ExecutionError(String),
     // (from, to) TODO - TranslationError
@@ -20,8 +28,14 @@ pub enum QlError {
     ServerError(Box<Error>),
 }
 
-pub mod types;
-pub mod execution;
+#[derive(Debug)]
+pub struct ParseError(&'static str);
+
+pub fn handle_query<R: query::Root>(query: &str, schema: &schema::Schema, root: R) ->QlResult<result::Value> {
+    let query = query::Query::parse(query)?;
+    query.validate(schema)?;
+    query.execute(schema, root)
+}
 
 mod test {
     use types::schema::*;
