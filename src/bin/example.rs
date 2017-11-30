@@ -102,6 +102,7 @@ mod example_generated {
         impl query::Root for $concrete {
             fn make_schema() -> schema::Schema {
                 let mut schema = schema::Schema::new();
+                schema.items.insert("schema", schema::schema_type());
                 schema.items.insert($concrete::name(), $concrete::schema());
                 schema.items.insert(Human::name(), Human::schema());
                 schema.items.insert(Character::name(), Character::schema());

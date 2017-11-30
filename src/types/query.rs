@@ -13,6 +13,7 @@ use parser::parse_query::parse_query;
 use types::{Name, Id, result, schema};
 
 // TODO variables, directives
+// TODO rename as Operation
 #[derive(Clone, Debug)]
 pub enum Query {
     Query(Vec<Field>),
@@ -47,10 +48,10 @@ impl Query {
         parse_query(input)
     }
 
-    pub fn validate(&self, _schema: &schema::Schema) -> QlResult<()> {
-        // TODO (and we will need to return some type infor about the query I think, or save that in self)
+    pub fn validate(&self, schema: &schema::Schema) -> QlResult<()> {
+        // TODO - we will need to return some type info about the query I think, or save that in self
         // FIXME should generate validation statically, rather than using the dynamic schema
-        unimplemented!();
+        ::validation::validate_query(self, schema)
     }
 
     // TODO don't need schema to execute?

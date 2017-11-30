@@ -1,11 +1,3 @@
-// {
-//   human(id: 1002) {
-//     name,
-//     appearsIn,
-//     id
-//   }
-// }
-
 use {ParseError, QlResult, QlError};
 use parser::lexer::tokenise;
 use parser::token::{Atom, Bracket, Token, TokenKind};

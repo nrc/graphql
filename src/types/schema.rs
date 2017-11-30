@@ -54,8 +54,16 @@ impl Schema {
 
     pub fn validate(&self) -> QlResult<()> {
         // TODO
-        unimplemented!();
+        Ok(())
     }
+}
+
+// TODO should include mutation if provided by user (and maybe query should be optional too?)
+pub fn schema_type() -> Item {
+    Item::Object(Object {
+        implements: vec![],
+        fields: vec![Field::fun("query", vec![], Type::Name("Query"))]
+    })
 }
 
 // QUESTION Reflect and Resolve should probably be elsewhere
@@ -77,6 +85,16 @@ pub enum Item {
     Object(Object),
     Interface(Interface),
     Enum(Enum),
+}
+
+impl Item {
+    pub fn fields(&self) -> &[Field] {
+        match *self {
+            Item::Object(ref obj) => &obj.fields,
+            Item::Interface(ref i) => &i.fields,
+            Item::Enum(_) => &[],
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -136,5 +154,28 @@ impl Type {
 
     pub fn array(ty: Type) -> Type {
         Type::Array(Box::new(ty))
+    }
+
+    pub fn assert_name(&self) -> &Name {
+        match *self {
+            Type::Name(ref n) => n,
+            _ => panic!("Type::assert_name called on non-Name: {:?}", self),
+        }
+    }
+
+    pub fn is_nullable(&self) -> bool {
+        match *self {
+            Type::NonNull(_) => false,
+            _ => true,
+        }
+    }
+
+    pub fn as_name_null(&self) -> Option<&Name> {
+        match *self {
+            Type::Name(ref n) => Some(n),
+            Type::NonNull(ref t) => t.as_name_null(),
+            _ => None,
+        }
+
     }
 }
