@@ -14,10 +14,6 @@ struct Parser<'a> {
     tokens: &'a [Token<'a>],
 }
 
-macro parse_err($s: expr) {
-    Err(QlError::ParseError(ParseError($s)))
-}
-
 impl<'a> Parser<'a> {
     fn new(tokens: &'a [Token<'a>]) -> QlResult<Parser<'a>> {
         Ok(Parser {
@@ -94,63 +90,27 @@ impl<'a> Parser<'a> {
         // TODO assert no more tokens
     }
 
+
     fn parse_field_list(&mut self) -> QlResult<Vec<Field>> {
-        self.ignore_newlines();
-
-        let mut result = vec![];
-        while let Some(field) = self.maybe_parse_field()? {
-            result.push(field);
-            self.maybe_eat(Atom::Comma);
-            self.ignore_newlines();
-        }
-        
-        Ok(result)
-    }
-
-    fn maybe_parse_field(&mut self) -> QlResult<Option<Field>> {
-        match self.peek_tok() {
-            None => Ok(None),
-            Some(&Token { kind: TokenKind::Atom(Atom::Name(_))}) => Ok(Some(self.parse_field()?)),
-            _ => parse_err!("Unexpected token, expected: field"),
-        }
-    }
-
-    // Terminated by either `,`, `\n`, or EOF
-    // Name (args)? { field list }?
-    fn parse_field(&mut self) -> QlResult<Field> {
-        Ok(Field {
-            name: self.parse_name()?,
-            alias: None,
-            args: self.maybe_parse_args()?,
-            fields: self.maybe_parse_fields()?,
-        })
-    }
-
-    fn parse_name(&mut self) -> QlResult<Name> {
-        if let TokenKind::Atom(a) = self.next_tok()?.kind {
-            if let Atom::Name(s) = a {
-                return Ok(Name(s.to_owned()));
-            }
-        }
-
-        parse_err!("Unexpected token, expected: name")
-    }
-
-    fn maybe_parse_args(&mut self) -> QlResult<Vec<(Name, Value)>> {
-        if let Some(tok) = self.peek_tok() {
-            if let TokenKind::Tree(Bracket::Paren, ref toks) = tok.kind {
-                self.bump();
-                return Parser::new(toks)?.parse_arg_list();
-            }
-        }
-        Ok(vec![])
+        self.parse_list(Self::maybe_parse_field)
     }
 
     fn parse_arg_list(&mut self) -> QlResult<Vec<(Name, Value)>> {
+        self.parse_list(Self::maybe_parse_arg)
+    }
+
+    fn parse_value_list(&mut self) -> QlResult<Vec<Value>> {
+        self.parse_list(Self::maybe_parse_value)
+    }
+
+    fn parse_list<F, T>(&mut self, f: F) -> QlResult<Vec<T>>
+    where
+        F: Fn(&mut Self) -> QlResult<Option<T>>
+    {
         self.ignore_newlines();
 
         let mut result = vec![];
-        while let Some(arg) = self.maybe_parse_arg()? {
+        while let Some(arg) = f(self)? {
             result.push(arg);
             self.maybe_eat(Atom::Comma);
             self.ignore_newlines();
@@ -159,72 +119,105 @@ impl<'a> Parser<'a> {
         Ok(result)
     }
 
-    // TODO this and parse_arg_list should be generic with fields
-    fn maybe_parse_arg(&mut self) -> QlResult<Option<(Name, Value)>> {
-        match self.peek_tok() {
-            None => Ok(None),
-            Some(&Token { kind: TokenKind::Atom(Atom::Name(_))}) => Ok(Some(self.parse_arg()?)),
+    fn parse_name(&mut self) -> QlResult<Name> {
+        self.expect(Self::maybe_parse_name)
+    }
+
+    fn parse_value(&mut self) -> QlResult<Value> {
+        self.expect(Self::maybe_parse_value)
+    }
+
+    fn expect<F, T>(&mut self, f: F) -> QlResult<T>
+    where
+        F: Fn(&mut Self) -> QlResult<Option<T>>
+    {
+        f(self).and_then(|n| n.ok_or_else(|| QlError::ParseError(ParseError("Unexpected eof"))))
+    }
+
+    fn maybe_parse_name(&mut self) -> QlResult<Option<Name>> {
+        match *none_ok!(self.peek_tok()) {
+            Token { kind: TokenKind::Atom(Atom::Name(s))} => {
+                self.bump();
+                Ok(Some(Name(s.to_owned())))
+            }
             _ => parse_err!("Unexpected token, expected: name"),
         }
     }
 
-    // Terminated by either `,`, `\n`, or EOF
+    // Name (args)? { field list }?
+    fn maybe_parse_field(&mut self) -> QlResult<Option<Field>> {
+        let name = none_ok!(self.maybe_parse_name()?);
+        let args = self.maybe_parse_args()?;
+        let fields = self.maybe_parse_fields()?;
+
+        Ok(Some(Field {
+            name,
+            alias: None,
+            args,
+            fields,
+        }))
+    }
+
     // Name : Value
-    fn parse_arg(&mut self) -> QlResult<(Name, Value)> {
-        let name = self.parse_name()?;
+    fn maybe_parse_arg(&mut self) -> QlResult<Option<(Name, Value)>> {
+        let name = none_ok!(self.maybe_parse_name()?);
         self.eat(Atom::Colon)?;
         let value = self.parse_value()?;
-        Ok((name, value))
+        Ok(Some((name, value)))
+    }
+
+    fn maybe_parse_value(&mut self) -> QlResult<Option<Value>> {
+        let result = match none_ok!(self.peek_tok()).kind {
+            TokenKind::Atom(Atom::Name("null")) => Value::Null,
+            TokenKind::Atom(Atom::Name(s)) => Value::Name(Name(s.to_owned())),
+            // TODO this is dumb - we parse a string to a number in the tokeniser, then
+            // convert it back to a string here. Perhaps we'll add a Number value later?
+            // If not we should treat numbers as Names in the tokeniser.
+            TokenKind::Atom(Atom::Number(n)) => Value::Name(Name(n.to_string())),
+            TokenKind::Atom(Atom::String(s)) => Value::String(s.to_owned()),
+            TokenKind::Tree(Bracket::Square, ref toks) => {
+                Value::Array(Parser::new(toks)?.parse_value_list()?)
+            }
+            _ => return parse_err!("Unexpected token, expected: value"),
+        };
+
+        self.bump();
+        Ok(Some(result))
+    }
+
+    fn maybe_parse_args(&mut self) -> QlResult<Vec<(Name, Value)>> {
+        self.maybe_parse_seq(Bracket::Paren, Self::parse_arg_list)
     }
 
     fn maybe_parse_fields(&mut self) -> QlResult<Vec<Field>> {
+        self.maybe_parse_seq(Bracket::Brace, Self::parse_field_list)
+    }
+
+    fn maybe_parse_seq<F, T>(&mut self, opener: Bracket, f: F) -> QlResult<Vec<T>>
+    where
+        F: Fn(&mut Self) -> QlResult<Vec<T>>
+    {
         if let Some(tok) = self.peek_tok() {
-            if let TokenKind::Tree(Bracket::Brace, ref toks) = tok.kind {
-                self.bump();
-                return Parser::new(toks)?.parse_field_list();
+            if let TokenKind::Tree(br, ref toks) = tok.kind {
+                if br == opener {
+                    self.bump();
+                    return f(&mut Parser::new(toks)?);
+                }
             }
         }
         Ok(vec![])
     }
+}
 
-    fn parse_value(&mut self) -> QlResult<Value> {
-        match self.next_tok()?.kind {
-            TokenKind::Atom(Atom::Name("null")) => Ok(Value::Null),
-            TokenKind::Atom(Atom::Name(s)) => Ok(Value::Name(Name(s.to_owned()))),
-            // TODO this is dumb - we parse a string to a number in the tokeniser, then
-            // convert it back to a string here. Perhaps we'll add a Number value later?
-            // If not we should treat numbers as Names in the tokeniser.
-            TokenKind::Atom(Atom::Number(n)) => Ok(Value::Name(Name(n.to_string()))),
-            TokenKind::Atom(Atom::String(s)) => Ok(Value::String(s.to_owned())),
-            TokenKind::Tree(Bracket::Square, ref toks) => {
-                Ok(Value::Array(Parser::new(toks)?.parse_value_list()?))
-            }
-            _ => parse_err!("Unexpected token, expected: value"),
-        }
+macro none_ok($e: expr) {
+    match $e {
+        Some(tok) => tok,
+        None => return Ok(None),
     }
+}
 
-    fn parse_value_list(&mut self) -> QlResult<Vec<Value>> {
-        self.ignore_newlines();
-
-        let mut result = vec![];
-        while let Some(arg) = self.maybe_parse_value()? {
-            result.push(arg);
-            self.maybe_eat(Atom::Comma);
-            self.ignore_newlines();
-        }
-        
-        Ok(result)
-    }
-
-    fn maybe_parse_value(&mut self) -> QlResult<Option<Value>> {
-        match self.peek_tok() {
-            None => Ok(None),
-            Some(&Token { kind: TokenKind::Atom(Atom::Name(_))})
-                | Some(&Token { kind: TokenKind::Atom(Atom::String(_))})
-                | Some(&Token { kind: TokenKind::Tree(Bracket::Square, _)}) => Ok(Some(self.parse_value()?)),
-            _ => parse_err!("Unexpected token, expected: value"),
-        }
-    }
+macro parse_err($s: expr) {
+    Err(QlError::ParseError(ParseError($s)))
 }
 
 #[cfg(test)]

@@ -3,10 +3,9 @@
 
 // Big TODOs
 //
-// refactoring in query parser
-// schema validation
 // schema parser
 // macro-ification (and refactoring in example)
+// schema validation
 // end to end test!
 // 0.1
 // validation caching
