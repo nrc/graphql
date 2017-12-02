@@ -97,32 +97,28 @@ mod example_generated {
 
     }
 
-    // FIXME these should be derive
     pub macro ImplQuery($concrete: ident) {
         impl query::Root for $concrete {
             fn make_schema() -> schema::Schema {
                 let mut schema = schema::Schema::new();
                 schema.items.insert("schema", schema::schema_type());
-                schema.items.insert($concrete::name(), $concrete::schema());
-                schema.items.insert(Human::name(), Human::schema());
-                schema.items.insert(Character::name(), Character::schema());
-                schema.items.insert(Episode::name(), Episode::schema());
+                schema.items.insert($concrete::NAME, $concrete::schema());
+                schema.items.insert(Human::NAME, Human::schema());
+                schema.items.insert(Character::NAME, Character::schema());
+                schema.items.insert(Episode::NAME, Episode::schema());
                 assert!(schema.validate().is_ok());
                 schema
             }
         }
 
         impl schema::Reflect for $concrete {
+            const NAME: Name = "Query";
+
             fn schema() -> schema::Item {
                 schema::Item::Object(schema::Object { implements: vec![], fields: vec![
                     schema::Field::fun("hero", vec![("episode", schema::Type::Name("Episode"))], schema::Type::Name("Character")),
                     schema::Field::fun("human", vec![("id", schema::Type::non_null(schema::Type::Id))], schema::Type::Name("Human")),
                 ] })
-            }
-
-            // TODO assoc const?
-            fn name() -> Name {
-                "Query"
             }
         }
 
@@ -184,6 +180,8 @@ mod example_generated {
 
     pub macro ImplHuman($concrete: ident) {
         impl schema::Reflect for $concrete {
+            const NAME: Name = "Human";
+
             fn schema() -> schema::Item {
                 let char_fields = vec![
                     schema::Field::field("id", schema::Type::non_null(schema::Type::Id)),
@@ -194,13 +192,6 @@ mod example_generated {
                 let mut fields = char_fields;
                 fields.push(schema::Field::field("homePlanet", schema::Type::String));
                 schema::Item::Object(schema::Object { implements: vec!["Character"], fields: fields })
-            }
-
-            // Alternative:
-            // Then look this up in a schema.
-            // Maybe we have both? schema -> make_schema_item
-            fn name() -> Name {
-                "Human"
             }
         }
 
@@ -252,6 +243,8 @@ mod example_generated {
 
     pub macro ImplCharacter($concrete: ident) {
         impl schema::Reflect for $concrete {
+            const NAME: Name = "Character";
+
             fn schema() -> schema::Item {
                 let char_fields = vec![
                     schema::Field::field("id", schema::Type::non_null(schema::Type::Id)),
@@ -260,10 +253,6 @@ mod example_generated {
                     schema::Field::field("appearsIn", schema::Type::non_null(schema::Type::array(schema::Type::Name("Episode")))),
                 ];
                 schema::Item::Object(schema::Object { implements: vec![], fields: char_fields })
-            }
-
-            fn name() -> Name {
-                "Character"
             }
         }
 
@@ -315,12 +304,10 @@ mod example_generated {
 
     pub macro ImplEpisode($concrete: ident) {
         impl schema::Reflect for $concrete {
+            const NAME: Name = "Episode";
+
             fn schema() -> schema::Item {
                 schema::Item::Enum(schema::Enum { variants: vec!["NEWHOPE", "EMPIRE", "JEDI"] })
-            }
-
-            fn name() -> Name {
-                "Episode"
             }
         }
         impl ResolveEnum for $concrete {}

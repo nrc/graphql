@@ -4,7 +4,7 @@
 // Big TODOs
 //
 // schema parser
-// macro-ification (and refactoring in example)
+// macro-ification
 // schema validation
 // end to end test!
 // 0.1

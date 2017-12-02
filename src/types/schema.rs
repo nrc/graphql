@@ -68,9 +68,9 @@ pub fn schema_type() -> Item {
 
 // QUESTION Reflect and Resolve should probably be elsewhere
 pub trait Reflect {
+    const NAME: Name;
+
     fn schema() -> Item;
-    // TODO should be assoc const
-    fn name() -> Name;
 }
 
 pub trait ResolveObject: Reflect + result::Resolve {
