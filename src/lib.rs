@@ -3,8 +3,6 @@
 
 // Big TODOs
 //
-// serialise result
-// end to end test!
 // refactoring in query parser
 // schema validation
 // schema parser

@@ -19,7 +19,7 @@ fn main() {
     }";
 
     match graphql::handle_query(query, &DbQuery::make_schema(), DbQuery) {
-        Ok(result) => println!("{:?}", result),
+        Ok(result) => println!("{}", result),
         Err(err) => println!("{:?}", err),
     }
 }
@@ -73,7 +73,7 @@ ImplQuery!(DbQuery);
 
 mod example_generated {
     use graphql::{execution, QlResult, QlError};
-    use graphql::types::{Id, query, result, schema};
+    use graphql::types::{self, Id, query, result, schema};
     use graphql::types::schema::{Name, Reflect, ResolveEnum, ResolveObject};
     use graphql::types::query::FromValue;
     use graphql::types::result::Resolve;
@@ -142,8 +142,9 @@ mod example_generated {
                             assert_eq!(&*name.0, "episode");
                             let episode: Option<<Self as Query>::Episode> = FromValue::from(value)?;
                             let result = self.hero(episode)?;
+                            let result = result.resolve(&field.fields)?;
                             
-                            results.push(result.resolve(&field.fields)?);
+                            results.push((types::Name("hero".to_owned()), result));
                         }
                         "human" => {
                             assert_eq!(field.args.len(), 1);
@@ -151,13 +152,14 @@ mod example_generated {
                             assert_eq!(&*name.0, "id");
                             let id: Id = FromValue::from(value)?;
                             let result = self.human(id)?;
+                            let result = result.resolve(&field.fields)?;
                             
-                            results.push(result.resolve(&field.fields)?);
+                            results.push((types::Name("human".to_owned()), result));
                         }
                         n => return Err(QlError::ExecutionError(format!("Missing field executor: {}", n))),
                     }
                 }
-                Ok(result::Value::Array(results))
+                Ok(result::Value::Object(result::Object { fields: results } ))
             }
         }
     }

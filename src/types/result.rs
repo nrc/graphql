@@ -67,3 +67,52 @@ impl<T: Resolve> Resolve for Vec<T> {
         Ok(Value::Array(self.iter().map(|t| t.resolve(fields)).collect::<Result<Vec<_>, _>>()?))
     }
 }
+
+
+mod display {
+    use super::*;
+    use std::fmt::{Display, Formatter, Result};
+
+    impl Display for Value {
+        fn fmt(&self, f: &mut Formatter) -> Result {
+            match *self {
+                Value::Id(ref id) => write!(f, "{}", id),
+                Value::Object(ref obj) => obj.fmt(f),
+                Value::Array(ref vals) => {
+                    write!(f, "[")?;
+                    let mut first = true;
+                    for v in vals {
+                        if first {
+                            first = false;
+                        } else {
+                            write!(f, ",")?;
+                        }
+                        v.fmt(f)?;
+                    }
+                    write!(f, "]")
+                }
+                Value::String(ref s) => write!(f, "\"{}\"", s),
+                Value::Int(n) => write!(f, "{}", n),
+                Value::Float(n) => write!(f, "{}", n),
+                Value::Null => write!(f, "null"),
+            }
+        }
+    }
+
+    impl Display for Object {
+        fn fmt(&self, f: &mut Formatter) -> Result {
+            write!(f, "{{")?;
+            let mut first = true;
+            for &(ref n, ref v) in &self.fields {
+                if first {
+                    first = false;
+                } else {
+                    write!(f, ",")?;
+                }
+                write!(f, "{}:", n.0)?;
+                v.fmt(f)?;
+            }
+            write!(f, "}}")
+        }
+    }
+}

@@ -5,16 +5,6 @@ use types::Name;
 
 use std::collections::HashSet;
 
-// field exists
-// object types include fields
-// no fields on scalars
-// args are present and have correct type
-// fields are unique
-// arguments must be unique, order is not important
-//  types must match
-//  non-null args are required, must be non-null
-//  nullable args are optional
-
 // QUESTION: we do a lot of lookups in lists, these are O(n) where hashing is O(1)
 // however, n is usually pretty small. Is it worth using hashing?
 
