@@ -13,9 +13,9 @@ pub fn validate_query(query: &Query, schema: &Schema) -> QlResult<()> {
 
     match *query {
         Query::Query(ref fields) => {
-            let query_type = match schema.items["schema"] {
+            let query_type = match schema.items[&Name("schema".to_owned())] {
                 schema::Item::Object(ref obj) => {
-                    let ty = &get_field(&obj.fields, "query").expect("missing `query` field").ty;
+                    let ty = &get_field(&obj.fields, &Name("query".to_owned())).expect("missing `query` field").ty;
                     &schema.items[ty.assert_name()]
                 }
                 _ => panic!("bad schema"),
@@ -75,7 +75,7 @@ fn validate_fields(fields: &[Field], ty: &schema::Item, ctx: &mut Context) {
         }
         names.insert(&*f.name.0);
 
-        let field_ty = get_field(ty_fields, &f.name.0);
+        let field_ty = get_field(ty_fields, &f.name);
         let field_ty = match field_ty {
             Some(field_ty) => field_ty,
             None => {
@@ -107,10 +107,10 @@ fn validate_field(field: &Field, ty: &schema::Field, ctx: &mut Context) {
     }
 }
 
-fn validate_args(args: &[(Name, Value)], ty: &[(schema::Name, schema::Type)], ctx: &mut Context) {
-    fn get_type<'a>(name: &Name, ty: &'a [(schema::Name, schema::Type)]) -> Option<&'a schema::Type> {
-        for &(n, ref t) in ty {
-            if name.0 == n {
+fn validate_args(args: &[(Name, Value)], ty: &[(Name, schema::Type)], ctx: &mut Context) {
+    fn get_type<'a>(name: &Name, ty: &'a [(Name, schema::Type)]) -> Option<&'a schema::Type> {
+        for &(ref n, ref t) in ty {
+            if name == n {
                 return Some(t);
             }
         }
@@ -119,10 +119,10 @@ fn validate_args(args: &[(Name, Value)], ty: &[(schema::Name, schema::Type)], ct
 
     let mut names = HashSet::new();
     for a in args {
-        if names.contains(&*(a.0).0) {
+        if names.contains(&a.0) {
             ctx.errors.push("duplicate argument");
         }
-        names.insert(&*(a.0).0);
+        names.insert(&a.0);
 
         match get_type(&a.0, ty) {
             Some(ty) => {
@@ -135,7 +135,7 @@ fn validate_args(args: &[(Name, Value)], ty: &[(schema::Name, schema::Type)], ct
     }
 
     for t in ty {
-        if !names.contains(t.0) && !(t.1).is_nullable() {
+        if !names.contains(&t.0) && !(t.1).is_nullable() {
             ctx.errors.push("missing argument");
         }
     }
@@ -193,9 +193,9 @@ fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
     }
 }
 
-fn get_field<'a>(fields: &'a [schema::Field], name: &str) -> Option<&'a schema::Field> {
+fn get_field<'a>(fields: &'a [schema::Field], name: &Name) -> Option<&'a schema::Field> {
     for f in fields {
-        if f.name == name {
+        if &f.name == name {
             return Some(f);
         }
     }

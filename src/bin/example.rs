@@ -73,8 +73,8 @@ ImplQuery!(DbQuery);
 
 mod example_generated {
     use graphql::{execution, QlResult, QlError};
-    use graphql::types::{self, Id, query, result, schema};
-    use graphql::types::schema::{Name, Reflect, ResolveEnum, ResolveObject};
+    use graphql::types::{self, Id, Name, query, result, schema};
+    use graphql::types::schema::{Reflect, ResolveEnum, ResolveObject};
     use graphql::types::query::FromValue;
     use graphql::types::result::Resolve;
 
@@ -101,23 +101,23 @@ mod example_generated {
         impl query::Root for $concrete {
             fn make_schema() -> schema::Schema {
                 let mut schema = schema::Schema::new();
-                schema.items.insert("schema", schema::schema_type());
-                schema.items.insert($concrete::NAME, $concrete::schema());
-                schema.items.insert(Human::NAME, Human::schema());
-                schema.items.insert(Character::NAME, Character::schema());
-                schema.items.insert(Episode::NAME, Episode::schema());
+                schema.items.insert(Name("schema".to_owned()), schema::schema_type());
+                schema.items.insert(Name($concrete::NAME.to_owned()), $concrete::schema());
+                schema.items.insert(Name(Human::NAME.to_owned()), Human::schema());
+                schema.items.insert(Name(Character::NAME.to_owned()), Character::schema());
+                schema.items.insert(Name(Episode::NAME.to_owned()), Episode::schema());
                 assert!(schema.validate().is_ok());
                 schema
             }
         }
 
         impl schema::Reflect for $concrete {
-            const NAME: Name = "Query";
+            const NAME: &'static str = "Query";
 
             fn schema() -> schema::Item {
                 schema::Item::Object(schema::Object { implements: vec![], fields: vec![
-                    schema::Field::fun("hero", vec![("episode", schema::Type::Name("Episode"))], schema::Type::Name("Character")),
-                    schema::Field::fun("human", vec![("id", schema::Type::non_null(schema::Type::Id))], schema::Type::Name("Human")),
+                    schema::Field::fun(Name("hero".to_owned()), vec![(Name("episode".to_owned()), schema::Type::Name(Name("Episode".to_owned())))], schema::Type::Name(Name("Character".to_owned()))),
+                    schema::Field::fun(Name("human".to_owned()), vec![(Name("id".to_owned()), schema::Type::non_null(schema::Type::Id))], schema::Type::Name(Name("Human".to_owned()))),
                 ] })
             }
         }
@@ -180,18 +180,18 @@ mod example_generated {
 
     pub macro ImplHuman($concrete: ident) {
         impl schema::Reflect for $concrete {
-            const NAME: Name = "Human";
+            const NAME: &'static str = "Human";
 
             fn schema() -> schema::Item {
                 let char_fields = vec![
-                    schema::Field::field("id", schema::Type::non_null(schema::Type::Id)),
-                    schema::Field::field("name", schema::Type::non_null(schema::Type::String)),
-                    schema::Field::field("friends", schema::Type::array(schema::Type::Name("Character"))),
-                    schema::Field::field("appearsIn", schema::Type::non_null(schema::Type::array(schema::Type::Name("Episode")))),
+                    schema::Field::field(Name("id".to_owned()), schema::Type::non_null(schema::Type::Id)),
+                    schema::Field::field(Name("name".to_owned()), schema::Type::non_null(schema::Type::String)),
+                    schema::Field::field(Name("friends".to_owned()), schema::Type::array(schema::Type::Name(Name("Character".to_owned())))),
+                    schema::Field::field(Name("appearsIn".to_owned()), schema::Type::non_null(schema::Type::array(schema::Type::Name(Name("Episode".to_owned()))))),
                 ];
                 let mut fields = char_fields;
-                fields.push(schema::Field::field("homePlanet", schema::Type::String));
-                schema::Item::Object(schema::Object { implements: vec!["Character"], fields: fields })
+                fields.push(schema::Field::field(Name("homePlanet".to_owned()), schema::Type::String));
+                schema::Item::Object(schema::Object { implements: vec![Name("Character".to_owned())], fields: fields })
             }
         }
 
@@ -243,14 +243,14 @@ mod example_generated {
 
     pub macro ImplCharacter($concrete: ident) {
         impl schema::Reflect for $concrete {
-            const NAME: Name = "Character";
+            const NAME: &'static str = "Character";
 
             fn schema() -> schema::Item {
                 let char_fields = vec![
-                    schema::Field::field("id", schema::Type::non_null(schema::Type::Id)),
-                    schema::Field::field("name", schema::Type::non_null(schema::Type::String)),
-                    schema::Field::field("friends", schema::Type::array(schema::Type::Name("Character"))),
-                    schema::Field::field("appearsIn", schema::Type::non_null(schema::Type::array(schema::Type::Name("Episode")))),
+                    schema::Field::field(Name("id".to_owned()), schema::Type::non_null(schema::Type::Id)),
+                    schema::Field::field(Name("name".to_owned()), schema::Type::non_null(schema::Type::String)),
+                    schema::Field::field(Name("friends".to_owned()), schema::Type::array(schema::Type::Name(Name("Character".to_owned())))),
+                    schema::Field::field(Name("appearsIn".to_owned()), schema::Type::non_null(schema::Type::array(schema::Type::Name(Name("Episode".to_owned()))))),
                 ];
                 schema::Item::Object(schema::Object { implements: vec![], fields: char_fields })
             }
@@ -304,10 +304,10 @@ mod example_generated {
 
     pub macro ImplEpisode($concrete: ident) {
         impl schema::Reflect for $concrete {
-            const NAME: Name = "Episode";
+            const NAME: &'static str = "Episode";
 
             fn schema() -> schema::Item {
-                schema::Item::Enum(schema::Enum { variants: vec!["NEWHOPE", "EMPIRE", "JEDI"] })
+                schema::Item::Enum(schema::Enum { variants: vec![Name("NEWHOPE".to_owned()), Name("EMPIRE".to_owned()), Name("JEDI".to_owned())] })
             }
         }
         impl ResolveEnum for $concrete {}

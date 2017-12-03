@@ -34,11 +34,9 @@ type Human implements Character {
 */
 
 use QlResult;
-use types::{query, result};
+use types::{query, result, Name};
 
 use std::collections::HashMap;
-
-pub type Name = &'static str;
 
 #[derive(Clone, Debug)]
 pub struct Schema {
@@ -62,13 +60,13 @@ impl Schema {
 pub fn schema_type() -> Item {
     Item::Object(Object {
         implements: vec![],
-        fields: vec![Field::fun("query", vec![], Type::Name("Query"))]
+        fields: vec![Field::fun(Name("query".to_owned()), vec![], Type::Name(Name("Query".to_owned())))]
     })
 }
 
 // QUESTION Reflect and Resolve should probably be elsewhere
 pub trait Reflect {
-    const NAME: Name;
+    const NAME: &'static str;
 
     fn schema() -> Item;
 }
@@ -82,6 +80,7 @@ pub trait ResolveEnum: Reflect + result::Resolve {
 
 #[derive(Clone, Debug)]
 pub enum Item {
+    Schema(Interface),
     Object(Object),
     Interface(Interface),
     Enum(Enum),
@@ -91,7 +90,7 @@ impl Item {
     pub fn fields(&self) -> &[Field] {
         match *self {
             Item::Object(ref obj) => &obj.fields,
-            Item::Interface(ref i) => &i.fields,
+            Item::Schema(ref i) | Item::Interface(ref i) => &i.fields,
             Item::Enum(_) => &[],
         }
     }
@@ -116,6 +115,7 @@ pub struct Enum {
 #[derive(Clone, Debug)]
 pub struct Field {
     pub name: Name,
+    // QUESTION: Do we need to distinguish between no arg list and an empty arg list?
     pub args: Vec<(Name, Type)>,
     pub ty: Type,
 }

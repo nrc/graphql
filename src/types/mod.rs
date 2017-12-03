@@ -2,7 +2,7 @@ pub mod schema;
 pub mod query;
 pub mod result;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Name(pub String);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
