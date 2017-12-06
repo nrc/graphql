@@ -1,0 +1,8 @@
+[package]
+name = "trilogy"
+version = "0.1.0"
+authors = ["Nick Cameron <ncameron@mozilla.com>"]
+
+[dependencies]
+graphql = { path = "../../graphql" }
+graphql-macros = { path = "../../graphql-macros" }

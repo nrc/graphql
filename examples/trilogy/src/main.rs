@@ -2,6 +2,7 @@
 #![feature(associated_type_defaults)]
 
 extern crate graphql;
+extern crate graphql_macros;
 
 use graphql::QlResult;
 use graphql::types::Id;
@@ -326,3 +327,4 @@ mod example_generated {
         }
     }
 }
+
