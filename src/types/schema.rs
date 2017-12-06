@@ -143,6 +143,7 @@ pub enum Type {
     String,
     Id,
     Name(Name),
+    // Non-null could be a flag, then wouldn't need to allocate
     NonNull(Box<Type>),
     Array(Box<Type>),
 }

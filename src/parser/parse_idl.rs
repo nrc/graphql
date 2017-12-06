@@ -2,6 +2,7 @@
 
 use {ParseError, QlResult, QlError};
 use parser::lexer::tokenise;
+use parser::parse_base::{none_ok, parse_err, TokenStream, maybe_parse_name};
 use parser::token::{Atom, Bracket, Token, TokenKind};
 use schema::{Field, Item, Interface, Object, Enum, Type, Schema};
 use types::Name;
@@ -10,254 +11,165 @@ use std::collections::HashMap;
 
 pub fn parse_schema(input: &str) -> QlResult<Schema> {
     let tokens = tokenise(input.trim())?;
-    let mut parser = Parser::new(&tokens)?;
-    parser.parse_doc()
+    let mut stream = TokenStream::new(&tokens);
+    parse_doc(&mut stream)
 }
 
-struct Parser<'a> {
-    tokens: &'a [Token<'a>],
+fn parse_doc(stream: &mut TokenStream) -> QlResult<Schema> {
+    stream.ignore_newlines();
+    let mut items = HashMap::new();
+    while let Some((name, item)) = maybe_parse_item(stream)? {
+        stream.ignore_newlines();
+        items.insert(name, item);
+    }
+    Ok(Schema { items })
+    // TODO check there are no more tokens
 }
 
-// QUESTION can we share more code with the query parser?
-impl<'a> Parser<'a> {
-    fn new(tokens: &'a [Token<'a>]) -> QlResult<Parser<'a>> {
-        Ok(Parser {
-            tokens,
-        })
+fn maybe_parse_item(stream: &mut TokenStream) -> QlResult<Option<(Name, Item)>> {
+    let kw = none_ok!(maybe_parse_name(stream)?);
+
+    if kw.0 == KSchema::TEXT {
+        let body = parse_interface(stream)?;
+        let item = Item::Schema(body);
+        return Ok(Some((Name("schema".to_owned()), item)));
     }
 
-    fn next_tok(&mut self) -> QlResult<&'a Token<'a>> {
-        if self.tokens.is_empty() {
-            return parse_err!("Unexpected end of stream");
+    let name = stream.expect(maybe_parse_name)?;
+
+    let item = match &*kw.0 {
+        KInterface::TEXT => {
+            let body = parse_interface(stream)?;
+            Item::Interface(body)
         }
-        let result = &self.tokens[0];
-        self.bump();
-        Ok(result)
-    }
-
-    // Precondition: !self.tokens.is_empty()
-    fn bump(&mut self) {
-        self.tokens = &self.tokens[1..];
-    }
-
-    fn peek_tok(&mut self) -> Option<&'a Token<'a>> {
-        self.tokens.get(0)
-    }
-
-    fn eat(&mut self, atom: Atom<'a>) -> QlResult<()> {
-        match self.next_tok()?.kind {
-            TokenKind::Atom(a) if a == atom => Ok(()),
-            _ => parse_err!("Unexpected token")
+        KType::TEXT => {
+            let body = parse_object(stream)?;
+            Item::Object(body)
         }
-    }
+        KEnum::TEXT => {
+            let body = parse_enum(stream)?;
+            Item::Enum(body)
+        }
+        _ => return parse_err!("Unexpected item"),
+    };
 
-    fn maybe_eat(&mut self, atom: Atom<'a>) {
-        if let Some(tok) = self.peek_tok() {
-            if let TokenKind::Atom(a) = tok.kind {
-                if a == atom {
-                    self.bump();
-                }
+    Ok(Some((name, item)))
+}
+
+fn parse_interface(stream: &mut TokenStream) -> QlResult<Interface> {
+    let fields = match stream.next_tok()?.kind {
+        TokenKind::Tree(Bracket::Brace, ref toks) => {
+            TokenStream::new(toks).parse_list(maybe_parse_field)?
+        }
+        _ => return parse_err!("Expected `{`"),
+    };
+    Ok(Interface {
+        fields,
+    })
+}
+
+fn parse_object(stream: &mut TokenStream) -> QlResult<Object> {
+    let implements = match stream.peek_tok() {
+        Some(tok) => match tok.kind {
+            TokenKind::Atom(Atom::Name(KImplements::TEXT)) => {
+                stream.bump();
+                let name = stream.expect(maybe_parse_name)?;
+                // TODO handle a list of names, not just one.
+                vec![name]
+            }
+            _ => vec![],
+        }
+        None => vec![],
+    };
+    let fields = match stream.next_tok()?.kind {
+        TokenKind::Tree(Bracket::Brace, ref toks) => {
+            TokenStream::new(toks).parse_list(maybe_parse_field)?
+        }
+        _ => return parse_err!("Expected `{`"),
+    };
+    Ok(Object {
+        implements,
+        fields,
+    })
+}
+
+fn parse_enum(stream: &mut TokenStream) -> QlResult<Enum> {
+    let variants = match stream.next_tok()?.kind {
+        TokenKind::Tree(Bracket::Brace, ref toks) => {
+            TokenStream::new(toks).parse_list(maybe_parse_variant)?
+        }
+        _ => return parse_err!("Expected `{`"),
+    };
+    Ok(Enum {
+        variants,
+    })
+}
+
+fn maybe_parse_field(stream: &mut TokenStream) -> QlResult<Option<Field>> {
+    let name = none_ok!(maybe_parse_name(stream)?);
+    let args = if let Some(&Token { kind: TokenKind::Tree(Bracket::Paren, ref toks)}) = stream.peek_tok() {
+        stream.bump();
+        TokenStream::new(toks).parse_list(maybe_parse_arg)?
+    } else {
+        vec![]
+    };
+    stream.eat(Atom::Colon)?;
+    let ty = parse_type(stream)?;
+    Ok(Some(Field {
+        name,
+        args,
+        ty,
+    }))
+}
+
+fn maybe_parse_variant(stream: &mut TokenStream) -> QlResult<Option<Name>> {
+    let name = none_ok!(maybe_parse_name(stream)?);
+    Ok(Some(name))
+}
+
+// Name : Type
+fn maybe_parse_arg(stream: &mut TokenStream) -> QlResult<Option<(Name, Type)>> {
+    let name = none_ok!(maybe_parse_name(stream)?);
+    stream.eat(Atom::Colon)?;
+    let ty = parse_type(stream)?;
+    Ok(Some((name, ty)))
+}
+
+// T ::= "String" | "ID" | Name | [T*] | T!
+fn parse_type(stream: &mut TokenStream) -> QlResult<Type> {
+    let mut result = match stream.next_tok()?.kind {
+        TokenKind::Tree(Bracket::Square, ref toks) => {
+            Type::Array(Box::new(parse_type(&mut TokenStream::new(toks))?))
+        }
+        TokenKind::Atom(Atom::Name(s)) => {
+            match s {
+                KString::TEXT => Type::String,
+                KId::TEXT => Type::Id,
+                _ => Type::Name(Name(s.to_owned())),
             }
         }
-    }
+        _ => return parse_err!("Unexpected token, expected type"),
+    };
 
-    fn ignore_newlines(&mut self) {
-        while let Some(tok) = self.tokens.get(0) {
-            match tok.kind {
-                TokenKind::Atom(Atom::NewLine) => self.bump(),
-                _ => return,
-            }
-        }
-    }
-
-    fn maybe_parse_name(&mut self) -> QlResult<Option<Name>> {
-        match *none_ok!(self.peek_tok()) {
-            Token { kind: TokenKind::Atom(Atom::Name(s))} => {
-                self.bump();
-                Ok(Some(Name(s.to_owned())))
-            }
-            _ => parse_err!("Unexpected token, expected: name"),
-        }
-    }
-
-    fn expect<F, T>(&mut self, f: F) -> QlResult<T>
-    where
-        F: Fn(&mut Self) -> QlResult<Option<T>>
-    {
-        f(self).and_then(|n| n.ok_or_else(|| QlError::ParseError(ParseError("Unexpected eof"))))
-    }
-
-    fn parse_list<F, T>(&mut self, f: F) -> QlResult<Vec<T>>
-    where
-        F: Fn(&mut Self) -> QlResult<Option<T>>
-    {
-        self.ignore_newlines();
-
-        let mut result = vec![];
-        while let Some(arg) = f(self)? {
-            result.push(arg);
-            self.maybe_eat(Atom::Comma);
-            self.ignore_newlines();
-        }
-        
-        Ok(result)
-    }
-
-    fn parse_doc(&mut self) -> QlResult<Schema> {
-        self.ignore_newlines();
-        let mut items = HashMap::new();
-        while let Some((name, item)) = self.maybe_parse_item()? {
-            self.ignore_newlines();
-            items.insert(name, item);
-        }
-        Ok(Schema { items })
-        // TODO check there are no more tokens
-    }
-
-    fn maybe_parse_item(&mut self) -> QlResult<Option<(Name, Item)>> {
-        let kw = none_ok!(self.maybe_parse_name()?);
-
-        if kw.0 == KSchema::TEXT {
-            let body = self.parse_interface()?;
-            let item = Item::Schema(body);
-            return Ok(Some((Name("schema".to_owned()), item)));
-        }
-
-        let name = self.expect(Self::maybe_parse_name)?;
-
-        let item = match &*kw.0 {
-            KInterface::TEXT => {
-                let body = self.parse_interface()?;
-                Item::Interface(body)
-            }
-            KType::TEXT => {
-                let body = self.parse_object()?;
-                Item::Object(body)
-            }
-            KEnum::TEXT => {
-                let body = self.parse_enum()?;
-                Item::Enum(body)
-            }
-            _ => return parse_err!("Unexpected item"),
-        };
-
-        Ok(Some((name, item)))
-    }
-
-    fn parse_interface(&mut self) -> QlResult<Interface> {
-        let fields = match self.next_tok()?.kind {
-            TokenKind::Tree(Bracket::Brace, ref toks) => {
-                Parser::new(toks)?.parse_list(Self::maybe_parse_field)?
-            }
-            _ => return parse_err!("Expected `{`"),
-        };
-        Ok(Interface {
-            fields,
-        })
-    }
-
-    fn parse_object(&mut self) -> QlResult<Object> {
-        let implements = match self.peek_tok() {
-            Some(tok) => match tok.kind {
-                TokenKind::Atom(Atom::Name(KImplements::TEXT)) => {
-                    self.bump();
-                    let name = self.expect(Self::maybe_parse_name)?;
-                    // TODO handle a list of names, not just one.
-                    vec![name]
-                }
-                _ => vec![],
-            }
-            None => vec![],
-        };
-        let fields = match self.next_tok()?.kind {
-            TokenKind::Tree(Bracket::Brace, ref toks) => {
-                Parser::new(toks)?.parse_list(Self::maybe_parse_field)?
-            }
-            _ => return parse_err!("Expected `{`"),
-        };
-        Ok(Object {
-            implements,
-            fields,
-        })
-    }
-
-    fn parse_enum(&mut self) -> QlResult<Enum> {
-        let variants = match self.next_tok()?.kind {
-            TokenKind::Tree(Bracket::Brace, ref toks) => {
-                Parser::new(toks)?.parse_list(Self::maybe_parse_variant)?
-            }
-            _ => return parse_err!("Expected `{`"),
-        };
-        Ok(Enum {
-            variants,
-        })
-    }
-
-    fn maybe_parse_field(&mut self) -> QlResult<Option<Field>> {
-        let name = none_ok!(self.maybe_parse_name()?);
-        let args = if let Some(&Token { kind: TokenKind::Tree(Bracket::Paren, ref toks)}) = self.peek_tok() {
-            self.bump();
-            Parser::new(toks)?.parse_list(Self::maybe_parse_arg)?
-        } else {
-            vec![]
-        };
-        self.eat(Atom::Colon)?;
-        let ty = self.parse_type()?;
-        Ok(Some(Field {
-            name,
-            args,
-            ty,
-        }))
-    }
-
-    fn maybe_parse_variant(&mut self) -> QlResult<Option<Name>> {
-        let name = none_ok!(self.maybe_parse_name()?);
-        Ok(Some(name))
-    }
-
-    // Name : Type
-    fn maybe_parse_arg(&mut self) -> QlResult<Option<(Name, Type)>> {
-        let name = none_ok!(self.maybe_parse_name()?);
-        self.eat(Atom::Colon)?;
-        let ty = self.parse_type()?;
-        Ok(Some((name, ty)))
-    }
-
-    // T ::= "String" | "ID" | Name | [T*] | T!
-    fn parse_type(&mut self) -> QlResult<Type> {
-        let mut result = match self.next_tok()?.kind {
-            TokenKind::Tree(Bracket::Square, ref toks) => {
-                Type::Array(Box::new(Parser::new(toks)?.parse_type()?))
-            }
-            TokenKind::Atom(Atom::Name(s)) => {
-                match s {
-                    KString::TEXT => Type::String,
-                    KId::TEXT => Type::Id,
-                    _ => Type::Name(Name(s.to_owned())),
-                }
-            }
-            _ => return parse_err!("Unexpected token, expected type"),
-        };
-
-        // Looks for `!`s (non-null types).
-        loop {
-            match self.peek_tok() {
-                None => break,
-                Some(tok) => {
-                    match tok.kind {
-                        TokenKind::Atom(Atom::Bang) => {
-                            self.bump();
-                            result = Type::NonNull(Box::new(result));
-                        }
-                        _ => break,
+    // Looks for `!`s (non-null types).
+    loop {
+        match stream.peek_tok() {
+            None => break,
+            Some(tok) => {
+                match tok.kind {
+                    TokenKind::Atom(Atom::Bang) => {
+                        stream.bump();
+                        result = Type::NonNull(Box::new(result));
                     }
+                    _ => break,
                 }
             }
         }
-
-        Ok(result)
     }
+
+    Ok(result)
 }
+
 
 trait Keyword {
     const TEXT: &'static str;
@@ -293,17 +205,6 @@ impl Keyword for KId {
     const TEXT: &'static str = "ID";
 }
 
-macro parse_err($s: expr) {
-    Err(QlError::ParseError(ParseError($s)))
-}
-
-macro none_ok($e: expr) {
-    match $e {
-        Some(tok) => tok,
-        None => return Ok(None),
-    }
-}
-
 
 #[cfg(test)]
 mod test {
@@ -312,8 +213,8 @@ mod test {
     #[test]
     fn test_parse_type() {
         let tokens = tokenise("foo!").unwrap();
-        let mut parser = Parser::new(&tokens).unwrap();
-        let result = parser.parse_type().unwrap();
+        let mut ts = TokenStream::new(&tokens);
+        let result = parse_type(&mut ts).unwrap();
         match result {
             Type::NonNull(inner) => match *inner {
                 Type::Name(n) => assert_eq!(n.0, "foo"),
@@ -323,8 +224,8 @@ mod test {
         }
 
         let tokens = tokenise("[ID!]!").unwrap();
-        let mut parser = Parser::new(&tokens).unwrap();
-        let result = parser.parse_type().unwrap();
+        let mut ts = TokenStream::new(&tokens);
+        let result = parse_type(&mut ts).unwrap();
         match result {
             Type::NonNull(inner) => match *inner {
                 Type::Array(inner) => match *inner {
@@ -373,8 +274,8 @@ mod test {
                 homePlanet: String
             }
         ").unwrap();
-        let mut parser = Parser::new(&tokens).unwrap();
-        let result = parser.parse_doc().unwrap();
+        let mut ts = TokenStream::new(&tokens);
+        let result = parse_doc(&mut ts).unwrap();
         assert_eq!(result.items.len(), 5);
         let schema = &result.items[&Name("schema".to_owned())];
         match *schema {

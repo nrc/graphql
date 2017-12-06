@@ -3,7 +3,6 @@
 
 // Big TODOs
 //
-// refactor common code from parsers
 // macro-ification
 // schema validation
 // end to end test!
