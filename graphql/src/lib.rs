@@ -3,9 +3,9 @@
 
 // Big TODOs
 //
-// macro-ification
-// schema validation
+// rustfmt the output (can we do this as an argument? Or a tool to do this?)
 // end to end test!
+// schema validation
 // 0.1
 // validation caching
 
@@ -18,6 +18,8 @@ pub mod execution;
 mod parser;
 pub mod types;
 pub mod validation;
+
+pub use parser::parse_idl::parse_schema;
 
 pub type QlResult<T> = Result<T, QlError>;
 
@@ -39,7 +41,8 @@ pub enum QlError {
 #[derive(Debug)]
 pub struct ParseError(&'static str);
 
-pub fn handle_query<R: query::Root>(query: &str, schema: &schema::Schema, root: R) -> QlResult<result::Value> {
+pub fn handle_query<R: query::Root>(query: &str, root: R) -> QlResult<result::Value> {
+    let schema = &R::schema();
     let query = query::Query::parse(query)?;
     query.validate(schema)?;
     query.execute(schema, root)

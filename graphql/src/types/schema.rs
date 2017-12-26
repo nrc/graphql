@@ -1,38 +1,3 @@
-/*
-Schema (IDL):
-
-schema {
-    query: Query
-}
-
-type Query {
-    hero(episode: Episode): Character
-    human(id : ID!): Human
-}
-
-enum Episode {
-    NEWHOPE
-    EMPIRE
-    JEDI
-}
-
-interface Character {
-    id: ID!
-    name: String!
-    friends: [Character]
-    appearsIn: [Episode]!
-}
-
-type Human implements Character {
-    id: ID!
-    name: String!
-    friends: [Character]
-    appearsIn: [Episode]!
-    homePlanet: String
-}
-
-*/
-
 use QlResult;
 use types::{query, result, Name};
 
@@ -60,9 +25,11 @@ impl Schema {
 pub fn schema_type() -> Item {
     Item::Object(Object {
         implements: vec![],
-        fields: vec![Field::fun(Name("query".to_owned()), vec![], Type::Name(Name("Query".to_owned())))]
+        fields: vec![Field::fun(Name("query".to_owned()), vec![], Type::name("Query"))]
     })
 }
+
+pub const SCHEMA_NAME: &'static str = "schema";
 
 // QUESTION Reflect and Resolve should probably be elsewhere
 pub trait Reflect {
@@ -139,42 +106,51 @@ impl Field {
 }
 
 #[derive(Clone, Debug)]
-pub enum Type {
+pub struct Type {
+    pub kind: TypeKind,
+    pub nullable: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeKind {
     String,
     Id,
     Name(Name),
-    // Non-null could be a flag, then wouldn't need to allocate
-    NonNull(Box<Type>),
     Array(Box<Type>),
 }
 
 impl Type {
-    pub fn non_null(ty: Type) -> Type {
-        Type::NonNull(Box::new(ty))
+    pub fn non_null(kind: TypeKind) -> Type {
+        Type {
+            kind,
+            nullable: false,
+        }
     }
 
     pub fn array(ty: Type) -> Type {
-        Type::Array(Box::new(ty))
+        Type {
+            kind: TypeKind::Array(Box::new(ty)),
+            nullable: true,
+        }
+    }
+
+    pub fn name(s: &str) -> Type {
+        Type {
+            kind: TypeKind::Name(Name(s.to_owned())),
+            nullable: true,
+        }
     }
 
     pub fn assert_name(&self) -> &Name {
-        match *self {
-            Type::Name(ref n) => n,
+        match self.kind {
+            TypeKind::Name(ref n) => n,
             _ => panic!("Type::assert_name called on non-Name: {:?}", self),
         }
     }
 
-    pub fn is_nullable(&self) -> bool {
-        match *self {
-            Type::NonNull(_) => false,
-            _ => true,
-        }
-    }
-
     pub fn as_name_null(&self) -> Option<&Name> {
-        match *self {
-            Type::Name(ref n) => Some(n),
-            Type::NonNull(ref t) => t.as_name_null(),
+        match self.kind {
+            TypeKind::Name(ref n) => Some(n),
             _ => None,
         }
 

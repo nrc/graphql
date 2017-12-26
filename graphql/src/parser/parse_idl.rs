@@ -4,7 +4,7 @@ use {ParseError, QlResult, QlError};
 use parser::lexer::tokenise;
 use parser::parse_base::{none_ok, parse_err, TokenStream, maybe_parse_name};
 use parser::token::{Atom, Bracket, Token, TokenKind};
-use schema::{Field, Item, Interface, Object, Enum, Type, Schema};
+use schema::{Field, Item, Interface, Object, Enum, Type, TypeKind, Schema};
 use types::Name;
 
 use std::collections::HashMap;
@@ -139,13 +139,16 @@ fn maybe_parse_arg(stream: &mut TokenStream) -> QlResult<Option<(Name, Type)>> {
 fn parse_type(stream: &mut TokenStream) -> QlResult<Type> {
     let mut result = match stream.next_tok()?.kind {
         TokenKind::Tree(Bracket::Square, ref toks) => {
-            Type::Array(Box::new(parse_type(&mut TokenStream::new(toks))?))
+            Type::array(parse_type(&mut TokenStream::new(toks))?)
         }
         TokenKind::Atom(Atom::Name(s)) => {
-            match s {
-                KString::TEXT => Type::String,
-                KId::TEXT => Type::Id,
-                _ => Type::Name(Name(s.to_owned())),
+            Type {
+                kind: match s {
+                    KString::TEXT => TypeKind::String,
+                    KId::TEXT => TypeKind::Id,
+                    _ => TypeKind::Name(Name(s.to_owned())),
+                },
+                nullable: true,
             }
         }
         _ => return parse_err!("Unexpected token, expected type"),
@@ -159,7 +162,7 @@ fn parse_type(stream: &mut TokenStream) -> QlResult<Type> {
                 match tok.kind {
                     TokenKind::Atom(Atom::Bang) => {
                         stream.bump();
-                        result = Type::NonNull(Box::new(result));
+                        result.nullable = false;
                     }
                     _ => break,
                 }
@@ -212,30 +215,26 @@ mod test {
 
     #[test]
     fn test_parse_type() {
-        let tokens = tokenise("foo!").unwrap();
+        let tokens = tokenise("foo").unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_type(&mut ts).unwrap();
-        match result {
-            Type::NonNull(inner) => match *inner {
-                Type::Name(n) => assert_eq!(n.0, "foo"),
-                _ => panic!(),
-            }
+        assert_eq!(result.nullable, true);
+        match result.kind {
+            TypeKind::Name(n) => assert_eq!(n.0, "foo"),
             _ => panic!(),
         }
 
         let tokens = tokenise("[ID!]!").unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_type(&mut ts).unwrap();
-        match result {
-            Type::NonNull(inner) => match *inner {
-                Type::Array(inner) => match *inner {
-                    Type::NonNull(inner) => match *inner {
-                        Type::Id => {}
-                        _ => panic!(),
-                    }
+        assert_eq!(result.nullable, false);
+        match result.kind {
+            TypeKind::Array(inner) => {
+                assert_eq!(inner.nullable, false);
+                match inner.kind {
+                    TypeKind::Id => {}
                     _ => panic!(),
-                },
-                _ => panic!(),
+                }
             }
             _ => panic!(),
         }
@@ -303,14 +302,11 @@ mod test {
                 assert_eq!(o.fields[0].name.0, "id");
                 assert_eq!(o.fields[3].name.0, "appearsIn");
                 let ep_ty = &o.fields[3].ty;
-                match *ep_ty {
-                    Type::NonNull(ref inner) => match **inner {
-                        Type::Array(ref inner) => match **inner {
-                            Type::Name(ref inner) => assert_eq!(inner.0, "Episode"),
-                            _ => panic!(),
-                        },
+                match ep_ty.kind {
+                    TypeKind::Array(ref inner) => match inner.kind {
+                        TypeKind::Name(ref inner) => assert_eq!(inner.0, "Episode"),
                         _ => panic!(),
-                    }
+                    },
                     _ => panic!(),
                 }                
             }

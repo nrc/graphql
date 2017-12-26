@@ -13,14 +13,7 @@ pub fn validate_query(query: &Query, schema: &Schema) -> QlResult<()> {
 
     match *query {
         Query::Query(ref fields) => {
-            let query_type = match schema.items[&Name("schema".to_owned())] {
-                schema::Item::Object(ref obj) => {
-                    let ty = &get_field(&obj.fields, &Name("query".to_owned())).expect("missing `query` field").ty;
-                    &schema.items[ty.assert_name()]
-                }
-                _ => panic!("bad schema"),
-            };
-            validate_fields(fields, query_type, &mut ctx);
+            validate_fields(fields, &schema.items[&Name("schema".to_owned())], &mut ctx);
         }
         Query::Mutation => unimplemented!(),
     }
@@ -79,6 +72,7 @@ fn validate_fields(fields: &[Field], ty: &schema::Item, ctx: &mut Context) {
         let field_ty = match field_ty {
             Some(field_ty) => field_ty,
             None => {
+                println!("Looking for {} in {:?}", f.name, ty_fields);
                 ctx.errors.push("field not found");
                 continue;
             }
@@ -135,15 +129,21 @@ fn validate_args(args: &[(Name, Value)], ty: &[(Name, schema::Type)], ctx: &mut 
     }
 
     for t in ty {
-        if !names.contains(&t.0) && !(t.1).is_nullable() {
+        if !names.contains(&t.0) && !(t.1).nullable {
             ctx.errors.push("missing argument");
         }
     }
 }
 
 fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
-    match *ty {
-        schema::Type::String => {
+    if let Value::Null = *value {
+        if !ty.nullable {
+            ctx.errors.push("null value must be non-null");
+        }
+    }
+
+    match ty.kind {
+        schema::TypeKind::String => {
             match *value {
                 Value::Null | Value::String(_) => {}
                 _ => {
@@ -151,7 +151,7 @@ fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
                 }
             }
         }
-        schema::Type::Id => {
+        schema::TypeKind::Id => {
             match *value {
                 Value::Null | Value::Name(_) => {}
                 _ => {
@@ -163,7 +163,7 @@ fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
         // yeah, we do e.g., enum values or whatever. Not exactly sure how to do
         // that though since the values of an enum can be defined by the impl.
         // What does the spec say?
-        schema::Type::Name(_) => {
+        schema::TypeKind::Name(_) => {
             match *value {
                 Value::Null | Value::Name(_) => {}
                 _ => {
@@ -171,13 +171,7 @@ fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
                 }
             }
         }
-        schema::Type::NonNull(ref nn_ty) => {
-            if let Value::Null = *value {
-                ctx.errors.push("null value must be non-null");
-            }
-            validate_value(value, nn_ty, ctx);
-        }
-        schema::Type::Array(ref el_ty) => {
+        schema::TypeKind::Array(ref el_ty) => {
             match *value {
                 Value::Null => {}
                 Value::Array(ref values) => {

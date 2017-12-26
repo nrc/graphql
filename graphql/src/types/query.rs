@@ -40,7 +40,7 @@ pub enum Value {
 }
 
 pub trait Root: result::Resolve {
-    fn make_schema() -> schema::Schema;
+    fn schema() -> schema::Schema;
 }
 
 impl Query {
@@ -60,6 +60,18 @@ impl Query {
             Query::Query(ref fields) => root.resolve(fields),
             _ => unimplemented!(),
         }
+    }
+}
+
+impl Field {
+    pub fn find_arg(&self, name: &Name) -> Option<&Value> {
+        for a in &self.args {
+            if &a.0 == name {
+                return Some(&a.1);
+            }
+        }
+
+        None
     }
 }
 

@@ -21,7 +21,12 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
                 }
                 _ => return parse_err!("Unexpected token, expected: `{`"),
             };
-            Ok(Query::Query(body))
+            Ok(Query::Query(vec![Field {
+                name: Name("query".to_owned()),
+                alias: None,
+                args: vec![],
+                fields: body,
+            }]))
         }
         TokenKind::Atom(Atom::Name(n)) if n == "mutation" => {
             // TODO parse the body of the mutation
@@ -29,7 +34,12 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
         }
         TokenKind::Tree(Bracket::Brace, ref toks) => {
             let body = parse_field_list(&mut TokenStream::new(toks))?;
-            Ok(Query::Query(body))
+            Ok(Query::Query(vec![Field {
+                name: Name("query".to_owned()),
+                alias: None,
+                args: vec![],
+                fields: body,
+            }]))
         }
         _ => parse_err!("Unexpected token, expected: identifier or `{`"),
     }

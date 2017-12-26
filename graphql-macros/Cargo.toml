@@ -3,5 +3,8 @@ name = "graphql-macros"
 version = "0.1.0"
 authors = ["Nick Cameron <ncameron@mozilla.com>"]
 
+[lib]
+proc-macro = true
+
 [dependencies]
 graphql = { path = "../graphql" }
