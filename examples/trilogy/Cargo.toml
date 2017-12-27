@@ -5,4 +5,4 @@ authors = ["Nick Cameron <ncameron@mozilla.com>"]
 
 [dependencies]
 graphql = { path = "../../graphql" }
-graphql-macros = { path = "../../graphql-macros" }
+graphql-macros = { path = "../../graphql-macros", features=["rustfmt"] }

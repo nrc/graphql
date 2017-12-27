@@ -3,6 +3,8 @@
 
 extern crate graphql;
 extern crate proc_macro;
+#[cfg(feature = "rustfmt")]
+extern crate rustfmt_nightly as rustfmt;
 
 use proc_macro::{TokenStream, TokenTree, TokenNode, Term, Span, quote};
 use graphql::{parse_schema, QlResult};
@@ -24,7 +26,14 @@ pub fn schema(input: TokenStream) -> TokenStream {
 
     let result: TokenStream = result.into_iter().collect();
 
-    // println!("{}", result);
+    #[cfg(feature = "rustfmt")]
+    {
+        use rustfmt::{format_snippet, Config};
+        use std::default::Default;
+
+        let formatted = format_snippet(&result.to_string(), &Config::default()).expect("Could not format output of `schema`");
+        println!("{}",formatted);
+    }
     // TODO workaround hygiene bugs
     result.to_string().parse().unwrap()
 }

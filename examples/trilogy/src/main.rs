@@ -122,6 +122,8 @@ ImplQuery!(DbQuery);
 // }
 
 
+// TODO remove the below at some point, or replace with the actual output from `schema!`.
+// Currently contains a bunch of TODOs/notes I'd like to keep.
 mod example_generated {
     // pub trait Root: query::Root {
     //     type Query: AbstractQuery;

@@ -55,6 +55,8 @@ must specify implementations for functions (e.g., `hero` in the above schema).
 You can then use the generated types - `enum`s are Rust enums, `type`s are Rust
 structs, etc.:
 
+TODO these are equivalent to resolvers in the JS frameworks
+
 ```
 struct MyServer;
 
@@ -115,3 +117,4 @@ impl AbstractHuman for MyHuman {
 }
 ```
 
+TODO show `main`

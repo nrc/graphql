@@ -4,7 +4,9 @@
 // Big TODOs
 //
 // rustfmt the output (can we do this as an argument? Or a tool to do this?)
+//   Format macro decls
 // end to end test!
+//   proper client
 // schema validation
 // 0.1
 // validation caching

@@ -8,3 +8,9 @@ proc-macro = true
 
 [dependencies]
 graphql = { path = "../graphql" }
+rustfmt-nightly = { git = "https://github.com/rust-lang-nursery/rustfmt" , optional = true }
+
+[features]
+default = []
+rustfmt = ["rustfmt-nightly"]
+
