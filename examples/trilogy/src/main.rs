@@ -2,6 +2,7 @@
 #![feature(proc_macro)]
 #![feature(associated_type_defaults)]
 
+extern crate env_logger;
 extern crate graphql;
 extern crate graphql_macros;
 
@@ -46,6 +47,8 @@ schema! {
 }
 
 fn main() {
+    env_logger::init().unwrap();
+    
     let query = "{
       human(id: 1002) {
         name,

@@ -2,6 +2,8 @@
 #![feature(proc_macro)]
 
 extern crate graphql;
+#[macro_use]
+extern crate log;
 extern crate proc_macro;
 #[cfg(feature = "rustfmt")]
 extern crate rustfmt_nightly as rustfmt;
@@ -32,8 +34,7 @@ pub fn schema(input: TokenStream) -> TokenStream {
         use std::default::Default;
 
         let formatted = format_snippet(&result.to_string(), &Config::default()).expect("Could not format output of `schema`");
-        // TODO use debug! instead of println!
-        // println!("{}",formatted);
+        debug!("{}",formatted);
     }
 
     // TODO to_string is to workaround hygiene bugs
@@ -153,7 +154,7 @@ impl ir::Enum {
 
     fn emit_abstract_trait(&self) -> TokenStream {
         let abs_name_t = self.abs_name_t();
-        // TODO hygiene problem? Can't find graphql
+        // QUESTION hygiene problem? Can't find graphql
         quote!(pub trait $abs_name_t: ::graphql::types::schema::ResolveEnum {})
     }
 

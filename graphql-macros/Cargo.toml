@@ -7,6 +7,7 @@ authors = ["Nick Cameron <ncameron@mozilla.com>"]
 proc-macro = true
 
 [dependencies]
+log = "0.4"
 graphql = { path = "../graphql" }
 rustfmt-nightly = { git = "https://github.com/rust-lang-nursery/rustfmt" , optional = true }
 
