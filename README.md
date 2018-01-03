@@ -50,6 +50,8 @@ schema! {
 }
 ```
 
+You can see the output for this example use of the `schema` macro at [schema.out](examples/trilogy/schema.out).
+
 The macro generates concrete and abstract versions of each item. The library user
 must specify implementations for functions (e.g., `hero` in the above schema).
 You can then use the generated types - `enum`s are Rust enums, `type`s are Rust

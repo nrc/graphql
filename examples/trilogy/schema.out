@@ -1,0 +1,426 @@
+pub trait AbstractCharacter: ::graphql::types::schema::ResolveObject {}
+pub macro ImplCharacter($concrete: ident) {
+    impl schema::Reflect for $concrete {
+        const NAME: &'static str = "Character";
+        fn schema() -> schema::Item {
+            let fields = vec![
+                schema::Field::field(
+                    Name("id".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Id,
+                        nullable: false,
+                    },
+                ),
+                schema::Field::field(
+                    Name("name".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::String,
+                        nullable: false,
+                    },
+                ),
+                schema::Field::field(
+                    Name("friends".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Array(Box::new(schema::Type {
+                            kind: schema::TypeKind::Name(Name("Character".to_owned())),
+                            nullable: true,
+                        })),
+                        nullable: true,
+                    },
+                ),
+                schema::Field::field(
+                    Name("appearsIn".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Array(Box::new(schema::Type {
+                            kind: schema::TypeKind::Name(Name("Episode".to_owned())),
+                            nullable: true,
+                        })),
+                        nullable: false,
+                    },
+                ),
+            ];
+            schema::Item::Object(schema::Object {
+                implements: vec![],
+                fields,
+            })
+        }
+    }
+    impl Resolve for $concrete {
+        fn resolve(&self, fields: &[query::Field]) -> QlResult<result::Value> {
+            let mut result = vec![];
+            for field in fields {
+                match &*field.name.0 {
+                    "id" => result.push((types::Name("id".to_owned()), self.resolve_field(field)?)),
+                    "name" => {
+                        result.push((types::Name("name".to_owned()), self.resolve_field(field)?))
+                    }
+                    "friends" => result.push((
+                        types::Name("friends".to_owned()),
+                        self.resolve_field(field)?,
+                    )),
+                    "appearsIn" => result.push((
+                        types::Name("appearsIn".to_owned()),
+                        self.resolve_field(field)?,
+                    )),
+                    n => {
+                        return Err(QlError::ExecutionError(format!(
+                            "Missing field executor in {}: {}",
+                            "Character", n
+                        )))
+                    }
+                }
+            }
+            Ok(result::Value::Object(result::Object { fields: result }))
+        }
+    }
+}
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct Character {
+    pub id: Id,
+    pub name: String,
+    pub friends: Option<Vec<Option<Character>>>,
+    pub appearsIn: Vec<Option<Episode>>,
+}
+ImplCharacter!(Character);
+impl ResolveObject for Character {
+    fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value> {
+        match &*field.name.0 {
+            "id" => self.id.resolve(&field.fields),
+            "name" => self.name.resolve(&field.fields),
+            "friends" => self.friends.resolve(&field.fields),
+            "appearsIn" => self.appearsIn.resolve(&field.fields),
+            _ => return Err(QlError::ResolveError("field", field.name.to_string(), None)),
+        }
+    }
+}
+impl AbstractCharacter for Character {}
+pub trait AbstractHuman: ::graphql::types::schema::ResolveObject {
+    type Character: AbstractCharacter = Character;
+    #[allow(non_snake_case)]
+    fn to_Character(&self) -> QlResult<Self::Character>;
+}
+pub macro ImplHuman($concrete: ident) {
+    impl schema::Reflect for $concrete {
+        const NAME: &'static str = "Human";
+        fn schema() -> schema::Item {
+            let fields = vec![
+                schema::Field::field(
+                    Name("id".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Id,
+                        nullable: false,
+                    },
+                ),
+                schema::Field::field(
+                    Name("name".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::String,
+                        nullable: false,
+                    },
+                ),
+                schema::Field::field(
+                    Name("friends".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Array(Box::new(schema::Type {
+                            kind: schema::TypeKind::Name(Name("Character".to_owned())),
+                            nullable: true,
+                        })),
+                        nullable: true,
+                    },
+                ),
+                schema::Field::field(
+                    Name("appearsIn".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::Array(Box::new(schema::Type {
+                            kind: schema::TypeKind::Name(Name("Episode".to_owned())),
+                            nullable: true,
+                        })),
+                        nullable: false,
+                    },
+                ),
+                schema::Field::field(
+                    Name("homePlanet".to_owned()),
+                    schema::Type {
+                        kind: schema::TypeKind::String,
+                        nullable: true,
+                    },
+                ),
+            ];
+            schema::Item::Object(schema::Object {
+                implements: vec![],
+                fields,
+            })
+        }
+    }
+    impl Resolve for $concrete {
+        fn resolve(&self, fields: &[query::Field]) -> QlResult<result::Value> {
+            let mut result = vec![];
+            for field in fields {
+                match &*field.name.0 {
+                    "id" => result.push((types::Name("id".to_owned()), self.resolve_field(field)?)),
+                    "name" => {
+                        result.push((types::Name("name".to_owned()), self.resolve_field(field)?))
+                    }
+                    "friends" => result.push((
+                        types::Name("friends".to_owned()),
+                        self.resolve_field(field)?,
+                    )),
+                    "appearsIn" => result.push((
+                        types::Name("appearsIn".to_owned()),
+                        self.resolve_field(field)?,
+                    )),
+                    "homePlanet" => result.push((
+                        types::Name("homePlanet".to_owned()),
+                        self.resolve_field(field)?,
+                    )),
+                    n => {
+                        return Err(QlError::ExecutionError(format!(
+                            "Missing field executor in {}: {}",
+                            "Human", n
+                        )))
+                    }
+                }
+            }
+            Ok(result::Value::Object(result::Object { fields: result }))
+        }
+    }
+}
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct Human {
+    pub id: Id,
+    pub name: String,
+    pub friends: Option<Vec<Option<Character>>>,
+    pub appearsIn: Vec<Option<Episode>>,
+    pub homePlanet: Option<String>,
+}
+ImplHuman!(Human);
+impl ResolveObject for Human {
+    fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value> {
+        match &*field.name.0 {
+            "id" => self.id.resolve(&field.fields),
+            "name" => self.name.resolve(&field.fields),
+            "friends" => self.friends.resolve(&field.fields),
+            "appearsIn" => self.appearsIn.resolve(&field.fields),
+            "homePlanet" => self.homePlanet.resolve(&field.fields),
+            _ => return Err(QlError::ResolveError("field", field.name.to_string(), None)),
+        }
+    }
+}
+impl AbstractHuman for Human {
+    type Character = Character;
+    fn to_Character(&self) -> QlResult<Self::Character> {
+        Ok(Character {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            friends: self.friends.clone(),
+            appearsIn: self.appearsIn.clone(),
+        })
+    }
+}
+pub trait AbstractQuery: ::graphql::types::schema::ResolveObject {
+    type Episode: AbstractEpisode = Episode;
+    type Human: AbstractHuman = Human;
+    type Character: AbstractCharacter = Character;
+    fn hero(
+        &self,
+        episode: Option<<Self as AbstractQuery>::Episode>,
+    ) -> QlResult<Option<<Self as AbstractQuery>::Character>>;
+    fn human(&self, id: Id) -> QlResult<Option<<Self as AbstractQuery>::Human>>;
+}
+pub macro ImplQuery($concrete: ident) {
+    impl schema::Reflect for $concrete {
+        const NAME: &'static str = "Query";
+        fn schema() -> schema::Item {
+            let fields = vec![
+                schema::Field::fun(
+                    Name("hero".to_owned()),
+                    vec![
+                        (
+                            Name("episode".to_owned()),
+                            schema::Type {
+                                kind: schema::TypeKind::Name(Name("Episode".to_owned())),
+                                nullable: true,
+                            },
+                        ),
+                    ],
+                    schema::Type {
+                        kind: schema::TypeKind::Name(Name("Character".to_owned())),
+                        nullable: true,
+                    },
+                ),
+                schema::Field::fun(
+                    Name("human".to_owned()),
+                    vec![
+                        (
+                            Name("id".to_owned()),
+                            schema::Type {
+                                kind: schema::TypeKind::Id,
+                                nullable: false,
+                            },
+                        ),
+                    ],
+                    schema::Type {
+                        kind: schema::TypeKind::Name(Name("Human".to_owned())),
+                        nullable: true,
+                    },
+                ),
+            ];
+            schema::Item::Object(schema::Object {
+                implements: vec![],
+                fields,
+            })
+        }
+    }
+    impl Resolve for $concrete {
+        fn resolve(&self, fields: &[query::Field]) -> QlResult<result::Value> {
+            let mut result = vec![];
+            for field in fields {
+                match &*field.name.0 {
+                    "hero" => {
+                        let arg0: Option<<Self as AbstractQuery>::Episode> =
+                            match field.find_arg(&Name("episode".to_owned())) {
+                                Some(val) => FromValue::from(val)?,
+                                None => None,
+                            };
+                        let sub_result = self.hero(arg0)?;
+                        let sub_result = sub_result.resolve(&field.fields)?;
+                        result.push((types::Name("hero".to_owned()), sub_result))
+                    }
+                    "human" => {
+                        let arg0: Id = match field.find_arg(&Name("id".to_owned())) {
+                            Some(val) => FromValue::from(val)?,
+                            None => panic!("Required non-null argument not supplied: {}", "id"),
+                        };
+                        let sub_result = self.human(arg0)?;
+                        let sub_result = sub_result.resolve(&field.fields)?;
+                        result.push((types::Name("human".to_owned()), sub_result))
+                    }
+                    n => {
+                        return Err(QlError::ExecutionError(format!(
+                            "Missing field executor in {}: {}",
+                            "Query", n
+                        )))
+                    }
+                }
+            }
+            Ok(result::Value::Object(result::Object { fields: result }))
+        }
+    }
+    impl ResolveObject for $concrete {
+        fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value> {
+            match &*field.name.0 {
+                "hero" => panic!("trying to dispatch function as field: {}", "hero"),
+                "human" => panic!("trying to dispatch function as field: {}", "human"),
+                _ => return Err(QlError::ResolveError("field", field.name.to_string(), None)),
+            }
+        }
+    }
+}
+pub trait Root: query::Root {
+    type Character: AbstractCharacter = Character;
+    type Human: AbstractHuman = Human;
+    type Query: AbstractQuery;
+    type Episode: AbstractEpisode + FromValue = Episode;
+    fn query(&self) -> QlResult<Self::Query>;
+}
+pub macro ImplRoot($concrete: ident) {
+    impl query::Root for $concrete {
+        fn schema() -> schema::Schema {
+            let mut schema = schema::Schema::new();
+            schema.items.insert(
+                Name(<Self as Root>::Character::NAME.to_owned()),
+                <Self as Root>::Character::schema(),
+            );
+            schema.items.insert(
+                Name(<Self as Root>::Human::NAME.to_owned()),
+                <Self as Root>::Human::schema(),
+            );
+            schema.items.insert(
+                Name(<Self as Root>::Query::NAME.to_owned()),
+                <Self as Root>::Query::schema(),
+            );
+            schema
+                .items
+                .insert(Name(schema::SCHEMA_NAME.to_owned()), schema::schema_type());
+            schema.items.insert(
+                Name(<Self as Root>::Episode::NAME.to_owned()),
+                <Self as Root>::Episode::schema(),
+            );
+            assert!(schema.validate().is_ok());
+            schema
+        }
+    }
+    impl Resolve for $concrete {
+        fn resolve(&self, fields: &[query::Field]) -> QlResult<result::Value> {
+            let mut results = vec![];
+            for field in fields {
+                match &*field.name.0 {
+                    "query" => {
+                        assert_eq!(field.args.len(), 0);
+                        let result = self.query()?;
+                        let result = result.resolve(&field.fields)?;
+                        results.push((types::Name("data".to_owned()), result));
+                    }
+                    n => {
+                        return Err(QlError::ExecutionError(format!(
+                            "Missing field executor in Root: {}",
+                            n
+                        )))
+                    }
+                }
+            }
+            Ok(result::Value::Object(result::Object { fields: results }))
+        }
+    }
+}
+pub trait AbstractEpisode: ::graphql::types::schema::ResolveEnum {}
+pub macro ImplEpisode($concrete: ident) {
+    impl schema::Reflect for $concrete {
+        const NAME: &'static str = "Episode";
+        fn schema() -> schema::Item {
+            schema::Item::Enum(schema::Enum {
+                variants: vec![
+                    Name("NEWHOPE".to_owned()),
+                    Name("EMPIRE".to_owned()),
+                    Name("JEDI".to_owned()),
+                ],
+            })
+        }
+    }
+    impl ResolveEnum for $concrete {}
+    impl AbstractEpisode for $concrete {}
+}
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub enum Episode {
+    NEWHOPE,
+    EMPIRE,
+    JEDI,
+}
+ImplEpisode!(Episode);
+impl FromValue for Episode {
+    fn from(value: &query::Value) -> QlResult<Episode> {
+        Ok(match &*<String as FromValue>::from(value)? {
+            "NEWHOPE" => Episode::NEWHOPE,
+            "EMPIRE" => Episode::EMPIRE,
+            "JEDI" => Episode::JEDI,
+            _ => {
+                return Err(QlError::LoweringError(
+                    format!("{:?}", value),
+                    "Option<Episode>".to_owned(),
+                ))
+            }
+        })
+    }
+}
+impl Resolve for Episode {
+    fn resolve(&self, _fields: &[query::Field]) -> QlResult<result::Value> {
+        Ok(match *self {
+            Episode::NEWHOPE => result::Value::String("NEWHOPE".to_owned()),
+            Episode::EMPIRE => result::Value::String("EMPIRE".to_owned()),
+            Episode::JEDI => result::Value::String("JEDI".to_owned()),
+        })
+    }
+}

@@ -32,9 +32,11 @@ pub fn schema(input: TokenStream) -> TokenStream {
         use std::default::Default;
 
         let formatted = format_snippet(&result.to_string(), &Config::default()).expect("Could not format output of `schema`");
-        println!("{}",formatted);
+        // TODO use debug! instead of println!
+        // println!("{}",formatted);
     }
-    // TODO workaround hygiene bugs
+
+    // TODO to_string is to workaround hygiene bugs
     result.to_string().parse().unwrap()
 }
 

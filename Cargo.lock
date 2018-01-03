@@ -205,7 +205,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "rustfmt-nightly"
 version = "0.3.4"
-source = "git+https://github.com/rust-lang-nursery/rustfmt#e95541c7d2556e40ee118f0163829efa95fa5b17"
+source = "git+https://github.com/rust-lang-nursery/rustfmt#9a7242c7d418eff6db3e11991114f7ee91f282e5"
 dependencies = [
  "cargo_metadata 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-new 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
