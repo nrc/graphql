@@ -185,6 +185,4 @@ fn get_field<'a>(fields: &'a [schema::Field], name: &Name) -> Option<&'a schema:
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
 }

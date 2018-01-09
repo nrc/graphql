@@ -1,9 +1,7 @@
 // Code which is shared between the IDL and query parsers
 
 use {ParseError, QlError, QlResult};
-use parser::lexer::tokenise;
 use parser::token::{Atom, Bracket, Token, TokenKind};
-use schema::{Enum, Field, Interface, Item, Object, Schema, Type};
 use types::Name;
 
 pub struct TokenStream<'a> {
@@ -124,6 +122,7 @@ pub macro none_ok($e: expr) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::lexer::tokenise;
 
     #[test]
     fn test_bump() {
