@@ -1,4 +1,4 @@
-use {QlResult, QlError};
+use {QlError, QlResult};
 use query::{Field, Query, Value};
 use schema::{self, Schema};
 use types::Name;
@@ -60,7 +60,6 @@ fn validate_fields(fields: &[Field], ty: &schema::Item, ctx: &mut Context) {
         ctx.errors.push("object type must have fields");
     }
 
-
     let mut names = HashSet::new();
     for f in fields {
         if names.contains(&*f.name.0) {
@@ -86,14 +85,12 @@ fn validate_field(field: &Field, ty: &schema::Field, ctx: &mut Context) {
 
     // TODO what do the fields on an array type look like?
     match ty.ty.as_name_null() {
-        Some(n) => {
-            match ctx.schema.items.get(n) {
-                Some(item) => {
-                    validate_fields(&field.fields, item, ctx);
-                }
-                None => ctx.errors.push("type not found"),
+        Some(n) => match ctx.schema.items.get(n) {
+            Some(item) => {
+                validate_fields(&field.fields, item, ctx);
             }
-        }
+            None => ctx.errors.push("type not found"),
+        },
         None if !field.fields.is_empty() => {
             ctx.errors.push("fields on scalar type");
         }
@@ -143,47 +140,37 @@ fn validate_value(value: &Value, ty: &schema::Type, ctx: &mut Context) {
     }
 
     match ty.kind {
-        schema::TypeKind::String => {
-            match *value {
-                Value::Null | Value::String(_) => {}
-                _ => {
-                    ctx.errors.push("type mismatch");
-                }
+        schema::TypeKind::String => match *value {
+            Value::Null | Value::String(_) => {}
+            _ => {
+                ctx.errors.push("type mismatch");
             }
-        }
-        schema::TypeKind::Id => {
-            match *value {
-                Value::Null | Value::Name(_) => {}
-                _ => {
-                    ctx.errors.push("type mismatch");
-                }
+        },
+        schema::TypeKind::Id => match *value {
+            Value::Null | Value::Name(_) => {}
+            _ => {
+                ctx.errors.push("type mismatch");
             }
-        }
+        },
         // TODO do we need to lookup the name and check that the value matches it?
         // yeah, we do e.g., enum values or whatever. Not exactly sure how to do
         // that though since the values of an enum can be defined by the impl.
         // What does the spec say?
-        schema::TypeKind::Name(_) => {
-            match *value {
-                Value::Null | Value::Name(_) => {}
-                _ => {
-                    ctx.errors.push("type mismatch");
-                }
+        schema::TypeKind::Name(_) => match *value {
+            Value::Null | Value::Name(_) => {}
+            _ => {
+                ctx.errors.push("type mismatch");
             }
-        }
-        schema::TypeKind::Array(ref el_ty) => {
-            match *value {
-                Value::Null => {}
-                Value::Array(ref values) => {
-                    for v in values {
-                        validate_value(v, el_ty, ctx);
-                    }
-                }
-                _ => {
-                    ctx.errors.push("type mismatch");
-                }
+        },
+        schema::TypeKind::Array(ref el_ty) => match *value {
+            Value::Null => {}
+            Value::Array(ref values) => for v in values {
+                validate_value(v, el_ty, ctx);
+            },
+            _ => {
+                ctx.errors.push("type mismatch");
             }
-        }
+        },
     }
 }
 
@@ -195,7 +182,6 @@ fn get_field<'a>(fields: &'a [schema::Field], name: &Name) -> Option<&'a schema:
     }
     None
 }
-
 
 #[cfg(test)]
 mod test {

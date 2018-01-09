@@ -64,10 +64,11 @@ impl<T: Resolve> Resolve for Option<T> {
 impl<T: Resolve> Resolve for Vec<T> {
     fn resolve(&self, fields: &[query::Field]) -> QlResult<Value> {
         // TODO collect all errors not just one
-        Ok(Value::Array(self.iter().map(|t| t.resolve(fields)).collect::<Result<Vec<_>, _>>()?))
+        Ok(Value::Array(self.iter()
+            .map(|t| t.resolve(fields))
+            .collect::<Result<Vec<_>, _>>()?))
     }
 }
-
 
 mod display {
     use super::*;

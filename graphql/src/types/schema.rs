@@ -25,7 +25,9 @@ impl Schema {
 pub fn schema_type() -> Item {
     Item::Object(Object {
         implements: vec![],
-        fields: vec![Field::fun(Name("query".to_owned()), vec![], Type::name("Query"))]
+        fields: vec![
+            Field::fun(Name("query".to_owned()), vec![], Type::name("Query")),
+        ],
     })
 }
 
@@ -42,8 +44,7 @@ pub trait ResolveObject: Reflect + result::Resolve {
     fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value>;
 }
 
-pub trait ResolveEnum: Reflect + result::Resolve {
-}
+pub trait ResolveEnum: Reflect + result::Resolve {}
 
 #[derive(Clone, Debug)]
 pub enum Item {
@@ -97,11 +98,7 @@ impl Field {
     }
 
     pub fn fun(name: Name, args: Vec<(Name, Type)>, ty: Type) -> Field {
-        Field {
-            name,
-            args,
-            ty,
-        }
+        Field { name, args, ty }
     }
 }
 
@@ -153,6 +150,5 @@ impl Type {
             TypeKind::Name(ref n) => Some(n),
             _ => None,
         }
-
     }
 }

@@ -8,7 +8,7 @@ extern crate proc_macro;
 #[cfg(feature = "rustfmt")]
 extern crate rustfmt_nightly as rustfmt;
 
-use proc_macro::{TokenStream, TokenTree, TokenNode, Term, Span, quote};
+use proc_macro::{quote, Span, Term, TokenNode, TokenStream, TokenTree};
 use graphql::{parse_schema, QlResult};
 use graphql::types::Name;
 
@@ -33,8 +33,9 @@ pub fn schema(input: TokenStream) -> TokenStream {
         use rustfmt::{format_snippet, Config};
         use std::default::Default;
 
-        let formatted = format_snippet(&result.to_string(), &Config::default()).expect("Could not format output of `schema`");
-        debug!("{}",formatted);
+        let formatted = format_snippet(&result.to_string(), &Config::default())
+            .expect("Could not format output of `schema`");
+        debug!("{}", formatted);
     }
 
     // TODO to_string is to workaround hygiene bugs
@@ -67,9 +68,7 @@ struct TokenBuilder {
 
 impl TokenBuilder {
     fn new() -> TokenBuilder {
-        TokenBuilder {
-            result: vec![],
-        }
+        TokenBuilder { result: vec![] }
     }
 
     fn push(&mut self, ts: TokenStream) {
@@ -201,14 +200,18 @@ impl ir::Enum {
 
     fn emit_impl_from_value(&self) -> TokenStream {
         let name_t = self.name_t();
-        let arms = self.variants.iter().map(|v| v.emit_from_str_arm(name_t.clone()));
+        let arms = self.variants
+            .iter()
+            .map(|v| v.emit_from_str_arm(name_t.clone()));
         let expect_str = ident(&format!("\"Option<{}>\"", self.name.0));
-        let arms: TokenStream = arms
-            .chain(
-                Some(quote!(
-                    _ => return Err(QlError::LoweringError(format!("{:?}", value), $expect_str.to_owned())),
-                )).into_iter()
-            ).collect();
+        let arms: TokenStream = arms.chain(
+            Some(quote!(
+                    _ => return Err(QlError::LoweringError(
+                            format!("{:?}", value),
+                            $expect_str.to_owned()
+                         )),
+                )).into_iter(),
+        ).collect();
 
         quote!(
             impl FromValue for $name_t {
@@ -223,7 +226,10 @@ impl ir::Enum {
 
     fn emit_impl_resolve(&self) -> TokenStream {
         let name_t = self.name_t();
-        let variants: TokenStream = self.variants.iter().map(|v| v.emit_resolve_arm(name_t.clone())).collect();
+        let variants: TokenStream = self.variants
+            .iter()
+            .map(|v| v.emit_resolve_arm(name_t.clone()))
+            .collect();
 
         quote!(
             impl Resolve for $name_t {
@@ -284,24 +290,33 @@ impl ir::Object {
         // Assoc types - any type used in a function or `implements` clause must
         // have an assoc type. Since fields aren't represented abstractly, they
         // don't need assoc types.
-        let impl_types: TokenStream = self.abs_names.iter().map(|n| {
-            let i_name = ident(&n.0);
-            let i_abs_name = ident(&format!("Abstract{}", n.0));
-            quote!(type $i_name: $i_abs_name = $i_name;)
-        }).collect();
+        let impl_types: TokenStream = self.abs_names
+            .iter()
+            .map(|n| {
+                let i_name = ident(&n.0);
+                let i_abs_name = ident(&format!("Abstract{}", n.0));
+                quote!(type $i_name: $i_abs_name = $i_name;)
+            })
+            .collect();
 
         // Conversion functions for converting this object to
         // an object in its implements list.
-        let conversion_fns: TokenStream = self.implements.iter().map(|n| {
-            let i_name = ident(&n.0);
-            let fn_name = ident(&format!("to_{}", n.0));
-            quote!(
+        let conversion_fns: TokenStream = self.implements
+            .iter()
+            .map(|n| {
+                let i_name = ident(&n.0);
+                let fn_name = ident(&format!("to_{}", n.0));
+                quote!(
                 #[allow(non_snake_case)]
                 fn $fn_name(&self) -> QlResult<Self::$i_name>;
             )
-        }).collect();
+            })
+            .collect();
 
-        let fns: TokenStream = self.fields.iter().map(|f| f.emit_fn_sig(&format!("Abstract{}", self.name.0))).collect();
+        let fns: TokenStream = self.fields
+            .iter()
+            .map(|f| f.emit_fn_sig(&format!("Abstract{}", self.name.0)))
+            .collect();
 
         quote!(
             pub trait $abs_name_t: ::graphql::types::schema::ResolveObject {
@@ -318,26 +333,36 @@ impl ir::Object {
 
         // Assoc types and conversion functions for converting this object to
         // an object in its implements list.
-        let impl_types: TokenStream = self.abs_names.iter().map(|n| {
-            let i_name = ident(&n.0);
-            quote!(type $i_name = $i_name;)
-        }).collect();
-        let conversion_fns: TokenStream = self.implements.iter().map(|n| {
-            let i_name = ident(&n.0);
-            let fn_name = ident(&format!("to_{}", n.0));
-            let super_ty = schema.items[&n].assert_object();
-            let fields: TokenStream = super_ty.fields.iter().map(|f| {
-                let f_name = ident(&f.name.0);
-                quote!($f_name: self.$f_name.clone(),)
-            }).collect();
-            quote!(
+        let impl_types: TokenStream = self.abs_names
+            .iter()
+            .map(|n| {
+                let i_name = ident(&n.0);
+                quote!(type $i_name = $i_name;)
+            })
+            .collect();
+        let conversion_fns: TokenStream = self.implements
+            .iter()
+            .map(|n| {
+                let i_name = ident(&n.0);
+                let fn_name = ident(&format!("to_{}", n.0));
+                let super_ty = schema.items[&n].assert_object();
+                let fields: TokenStream = super_ty
+                    .fields
+                    .iter()
+                    .map(|f| {
+                        let f_name = ident(&f.name.0);
+                        quote!($f_name: self.$f_name.clone(),)
+                    })
+                    .collect();
+                quote!(
                 fn $fn_name(&self) -> QlResult<Self::$i_name> {
                     Ok($i_name {
                         $fields
                     })
                 }
             )
-        }).collect();
+            })
+            .collect();
 
         quote!(
             impl $abs_name_t for $name_t {
@@ -351,17 +376,27 @@ impl ir::Object {
         let impl_name_t = self.impl_name_t();
         let name_str = self.name_str();
         let field_schemas: TokenStream = self.fields.iter().map(|f| f.emit_schema()).collect();
-        let resolve_fields: TokenStream = self.fields.iter().map(|f| f.emit_resolve_arm(&format!("Abstract{}", self.name.0))).collect();
+        let resolve_fields: TokenStream = self.fields
+            .iter()
+            .map(|f| f.emit_resolve_arm(&format!("Abstract{}", self.name.0)))
+            .collect();
 
         let impl_resolve_object = if !self.has_fields {
             // TODO share code with emit_resolve_object_impl
-            let fields: TokenStream = self.fields.iter().map(|f| f.emit_dispatch_resolve_arm()).collect();
+            let fields: TokenStream = self.fields
+                .iter()
+                .map(|f| f.emit_dispatch_resolve_arm())
+                .collect();
             quote!(
                 impl ResolveObject for $$concrete {
                     fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value> {
                         match &*field.name.0 {
                             $fields
-                            _ => return Err(QlError::ResolveError("field", field.name.to_string(), None)),
+                            _ => return Err(QlError::ResolveError(
+                                    "field",
+                                    field.name.to_string(),
+                                    None
+                                 )),
                         }
                     }
                 }
@@ -392,7 +427,9 @@ impl ir::Object {
                         for field in fields {
                             match &*field.name.0 {
                                 $resolve_fields
-                                n => return Err(QlError::ExecutionError(format!("Missing field executor in {}: {}", $name_str, n))),
+                                n => return Err(QlError::ExecutionError(
+                                        format!("Missing field executor in {}: {}", $name_str, n)
+                                     )),
                             }
                         }
                         Ok(result::Value::Object(result::Object { fields: result } ))
@@ -413,14 +450,21 @@ impl ir::Object {
 
     fn emit_resolve_object_impl(&self) -> TokenStream {
         let name_t = self.name_t();
-        let fields: TokenStream = self.fields.iter().map(|f| f.emit_dispatch_resolve_arm()).collect();
+        let fields: TokenStream = self.fields
+            .iter()
+            .map(|f| f.emit_dispatch_resolve_arm())
+            .collect();
 
         quote!(
             impl ResolveObject for $name_t {
                 fn resolve_field(&self, field: &query::Field) -> QlResult<result::Value> {
                     match &*field.name.0 {
                         $fields
-                        _ => return Err(QlError::ResolveError("field", field.name.to_string(), None)),
+                        _ => return Err(QlError::ResolveError(
+                                "field",
+                                field.name.to_string(),
+                                None
+                             )),
                     }
                 }
             }
@@ -443,7 +487,6 @@ impl ir::Object {
         quote!(Name(<Self as Root>::$name_t::NAME.to_owned()), <Self as Root>::$name_t::schema())
     }
 }
-
 
 fn emit_server(schema: &ir::Schema) -> QlResult<TokenStream> {
     let mut builder = TokenBuilder::new();
@@ -471,10 +514,13 @@ impl ir::Schema {
     }
 
     fn emit_impl_macro(&self) -> TokenStream {
-        let schema_items: TokenStream = self.items.values().map(|i| {
-            let sch = i.emit_schema();
-            quote!(schema.items.insert($sch);)
-        }).collect();
+        let schema_items: TokenStream = self.items
+            .values()
+            .map(|i| {
+                let sch = i.emit_schema();
+                quote!(schema.items.insert($sch);)
+            })
+            .collect();
 
         quote!(
             pub macro ImplRoot($$concrete: ident) {
@@ -497,11 +543,14 @@ impl ir::Schema {
                                     let result = self.query()?;
                                     let result = result.resolve(&field.fields)?;
 
-                                    // This is a special case where the result doesn't match the query
+                                    // This is a special case where the result
+                                    // doesn't match the query
                                     results.push((types::Name("data".to_owned()), result));
                                 }
                                 // FIXME mutations
-                                n => return Err(QlError::ExecutionError(format!("Missing field executor in Root: {}", n))),
+                                n => return Err(QlError::ExecutionError(
+                                        format!("Missing field executor in Root: {}", n)
+                                     )),
                             }
                         }
                         Ok(result::Value::Object(result::Object { fields: results } ))
@@ -554,31 +603,42 @@ impl ir::Field {
     fn emit_resolve_arm(&self, abs_self_type: &str) -> TokenStream {
         let name_str = ident(&format!("\"{}\"", self.name.0));
         if self.args.is_empty() {
-            quote!($name_str => result.push((types::Name($name_str.to_owned()), self.resolve_field(field)?)),)
+            quote!(
+                $name_str => result.push(
+                    (types::Name($name_str.to_owned()),
+                    self.resolve_field(field)?)
+                ),
+            )
         } else {
             let name = ident(&self.name.0);
 
-            let process_args: TokenStream = self.args.iter().enumerate().map(|(i, a)| {
-                let arg_n = ident(&format!("arg{}", i));
-                let arg_ty = a.1.emit_abs_rust_type(abs_self_type);
-                let name_str = ident(&format!("\"{}\"", a.0));
-                let none_expr = if a.1.nullable {
-                    quote!(None)
-                } else {
-                    quote!(panic!("Required non-null argument not supplied: {}", $name_str))
-                };
-                quote!(
+            let process_args: TokenStream = self.args
+                .iter()
+                .enumerate()
+                .map(|(i, a)| {
+                    let arg_n = ident(&format!("arg{}", i));
+                    let arg_ty = a.1.emit_abs_rust_type(abs_self_type);
+                    let name_str = ident(&format!("\"{}\"", a.0));
+                    let none_expr = if a.1.nullable {
+                        quote!(None)
+                    } else {
+                        quote!(panic!("Required non-null argument not supplied: {}", $name_str))
+                    };
+                    quote!(
                     let $arg_n: $arg_ty = match field.find_arg(&Name($name_str.to_owned())) {
                         Some(val) => FromValue::from(val)?,
                         None => $none_expr,
                     };
                 )
-            }).collect();
+                })
+                .collect();
 
-            let arg_list: TokenStream = (0..self.args.len()).map(|i| {
-                let arg_n = ident(&format!("arg{}", i));
-                quote!($arg_n,)
-            }).collect();
+            let arg_list: TokenStream = (0..self.args.len())
+                .map(|i| {
+                    let arg_n = ident(&format!("arg{}", i));
+                    quote!($arg_n,)
+                })
+                .collect();
 
             quote!(
                 $name_str => {
@@ -606,11 +666,14 @@ impl ir::Field {
         if self.args.is_empty() {
             quote!(schema::Field::field(Name($name_str.to_owned()), $ty),)
         } else {
-            let args: TokenStream = self.args.iter().map(|a| {
-                let name_str = ident(&format!("\"{}\"", (a.0).0));
-                let ty = (a.1).emit_type_schema();
-                quote!((Name($name_str.to_owned()), $ty))
-            }).collect();
+            let args: TokenStream = self.args
+                .iter()
+                .map(|a| {
+                    let name_str = ident(&format!("\"{}\"", (a.0).0));
+                    let ty = (a.1).emit_type_schema();
+                    quote!((Name($name_str.to_owned()), $ty))
+                })
+                .collect();
             quote!(
                 schema::Field::fun(
                     Name($name_str.to_owned()),
@@ -628,11 +691,14 @@ impl ir::Field {
 
         let name = ident(&self.name.0);
         let ty = self.ty.emit_abs_rust_type(abs_self_type);
-        let args: TokenStream = self.args.iter().map(|a| {
-            let name = ident(&(a.0).0);
-            let ty = (a.1).emit_abs_rust_type(abs_self_type);
-            quote!($name: $ty,)
-        }).collect();
+        let args: TokenStream = self.args
+            .iter()
+            .map(|a| {
+                let name = ident(&(a.0).0);
+                let ty = (a.1).emit_abs_rust_type(abs_self_type);
+                quote!($name: $ty,)
+            })
+            .collect();
 
         quote!(fn $name(&self, $args) -> QlResult<$ty>;)
     }
