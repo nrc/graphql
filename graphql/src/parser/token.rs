@@ -64,7 +64,14 @@ mod display {
                 TokenKind::Atom(ref a) => a.fmt(f),
                 TokenKind::Tree(ref b, ref ts) => {
                     write!(f, "{}", b.open())?;
-                    write!(f, "{}", ts.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(" "))?;
+                    write!(
+                        f,
+                        "{}",
+                        ts.iter()
+                            .map(|t| t.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    )?;
                     write!(f, "{}", b.close())
                 }
             }

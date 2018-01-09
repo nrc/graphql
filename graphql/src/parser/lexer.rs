@@ -5,11 +5,10 @@ use std::iter::Peekable;
 use std::mem;
 use std::str::{CharIndices, FromStr};
 
-
 pub fn tokenise<'a>(input: &'a str) -> QlResult<Vec<Token<'a>>> {
     let lexer = Lexer::new(input);
     lexer.tokenise()
-} 
+}
 
 // pub type Span = ::rls_span::Span<::rls_span::ZeroIndexed>;
 
@@ -27,7 +26,6 @@ pub enum LexError {
 macro lex_err($kind: ident $(, $body: expr)*) {
     Err(QlError::LexError(LexError::$kind($($body,)*)))
 }
-
 
 struct Lexer<'a> {
     input: &'a str,
@@ -61,12 +59,10 @@ impl<'a> Lexer<'a> {
                 '[' => self.open_bracket(Bracket::Square),
                 '(' => self.open_bracket(Bracket::Paren),
 
-                '"' => {
-                    match self.string {
-                        Some(_) => self.close_string(i),
-                        None => self.open_string(i),
-                    }
-                }
+                '"' => match self.string {
+                    Some(_) => self.close_string(i),
+                    None => self.open_string(i),
+                },
 
                 '\n' => {
                     // TODO span stuff
@@ -267,7 +263,10 @@ mod test {
         let lexer = Lexer::new(input);
         let result = lexer.tokenise().unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_string().replace(' ', ""), input.replace(' ', ""));
+        assert_eq!(
+            result[0].to_string().replace(' ', ""),
+            input.replace(' ', "")
+        );
     }
 
     // TODO test: errors

@@ -1,9 +1,9 @@
 // Code which is shared between the IDL and query parsers
 
-use {ParseError, QlResult, QlError};
+use {ParseError, QlError, QlResult};
 use parser::lexer::tokenise;
 use parser::token::{Atom, Bracket, Token, TokenKind};
-use schema::{Field, Item, Interface, Object, Enum, Type, Schema};
+use schema::{Enum, Field, Interface, Item, Object, Schema, Type};
 use types::Name;
 
 pub struct TokenStream<'a> {
@@ -12,9 +12,7 @@ pub struct TokenStream<'a> {
 
 impl<'a> TokenStream<'a> {
     pub fn new(tokens: &'a [Token<'a>]) -> TokenStream<'a> {
-        TokenStream {
-            tokens,
-        }
+        TokenStream { tokens }
     }
 
     pub fn next_tok(&mut self) -> QlResult<&'a Token<'a>> {
@@ -38,7 +36,7 @@ impl<'a> TokenStream<'a> {
     pub fn eat(&mut self, atom: Atom<'a>) -> QlResult<()> {
         match self.next_tok()?.kind {
             TokenKind::Atom(a) if a == atom => Ok(()),
-            _ => parse_err!("Unexpected token")
+            _ => parse_err!("Unexpected token"),
         }
     }
 
@@ -63,14 +61,14 @@ impl<'a> TokenStream<'a> {
 
     pub fn expect<F, T>(&mut self, f: F) -> QlResult<T>
     where
-        F: Fn(&mut TokenStream) -> QlResult<Option<T>>
+        F: Fn(&mut TokenStream) -> QlResult<Option<T>>,
     {
         f(self).and_then(|n| n.ok_or_else(|| QlError::ParseError(ParseError("Unexpected eof"))))
     }
 
     pub fn parse_list<F, T>(&mut self, f: F) -> QlResult<Vec<T>>
     where
-        F: Fn(&mut TokenStream) -> QlResult<Option<T>>
+        F: Fn(&mut TokenStream) -> QlResult<Option<T>>,
     {
         self.ignore_newlines();
 
@@ -80,13 +78,13 @@ impl<'a> TokenStream<'a> {
             self.maybe_eat(Atom::Comma);
             self.ignore_newlines();
         }
-        
+
         Ok(result)
     }
 
     pub fn maybe_parse_seq<F, T>(&mut self, opener: Bracket, f: F) -> QlResult<Vec<T>>
     where
-        F: Fn(&mut TokenStream) -> QlResult<Vec<T>>
+        F: Fn(&mut TokenStream) -> QlResult<Vec<T>>,
     {
         if let Some(tok) = self.peek_tok() {
             if let TokenKind::Tree(br, ref toks) = tok.kind {
@@ -102,7 +100,9 @@ impl<'a> TokenStream<'a> {
 
 pub fn maybe_parse_name(stream: &mut TokenStream) -> QlResult<Option<Name>> {
     match *none_ok!(stream.peek_tok()) {
-        Token { kind: TokenKind::Atom(Atom::Name(s))} => {
+        Token {
+            kind: TokenKind::Atom(Atom::Name(s)),
+        } => {
             stream.bump();
             Ok(Some(Name(s.to_owned())))
         }
@@ -120,7 +120,6 @@ pub macro none_ok($e: expr) {
         None => return Ok(None),
     }
 }
-
 
 #[cfg(test)]
 mod test {

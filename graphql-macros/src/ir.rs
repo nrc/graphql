@@ -1,7 +1,7 @@
-use graphql::types::{Name, schema};
+use graphql::types::{schema, Name};
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
-use proc_macro::{TokenStream, quote};
+use proc_macro::{quote, TokenStream};
 
 #[derive(Clone, Debug)]
 pub struct Schema {
@@ -103,7 +103,11 @@ pub enum TypeKind {
 
 pub fn lower_schema(schema: &schema::Schema) -> Schema {
     Schema {
-        items: schema.items.iter().map(|(n, i)| (n.clone(), lower_item(n, i))).collect(),
+        items: schema
+            .items
+            .iter()
+            .map(|(n, i)| (n.clone(), lower_item(n, i)))
+            .collect(),
     }
 }
 
@@ -173,7 +177,11 @@ fn lower_enum(name: &Name, e: &schema::Enum) -> Enum {
 fn lower_field(field: &schema::Field) -> Field {
     Field {
         name: field.name.clone(),
-        args: field.args.iter().map(|&(ref n, ref t)| (n.clone(), lower_type(t))).collect(),
+        args: field
+            .args
+            .iter()
+            .map(|&(ref n, ref t)| (n.clone(), lower_type(t)))
+            .collect(),
         ty: lower_type(&field.ty),
     }
 }
@@ -189,4 +197,3 @@ fn lower_type(ty: &schema::Type) -> Type {
         nullable: ty.nullable,
     }
 }
-

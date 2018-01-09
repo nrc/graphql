@@ -1,6 +1,6 @@
-use {ParseError, QlResult, QlError};
+use {ParseError, QlError, QlResult};
 use parser::lexer::tokenise;
-use parser::parse_base::{none_ok, parse_err, TokenStream, maybe_parse_name};
+use parser::parse_base::{maybe_parse_name, none_ok, parse_err, TokenStream};
 use parser::token::{Atom, Bracket, Token, TokenKind};
 use query::{Field, Query, Value};
 use types::Name;
@@ -21,12 +21,14 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
                 }
                 _ => return parse_err!("Unexpected token, expected: `{`"),
             };
-            Ok(Query::Query(vec![Field {
-                name: Name("query".to_owned()),
-                alias: None,
-                args: vec![],
-                fields: body,
-            }]))
+            Ok(Query::Query(vec![
+                Field {
+                    name: Name("query".to_owned()),
+                    alias: None,
+                    args: vec![],
+                    fields: body,
+                },
+            ]))
         }
         TokenKind::Atom(Atom::Name(n)) if n == "mutation" => {
             // TODO parse the body of the mutation
@@ -34,12 +36,14 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
         }
         TokenKind::Tree(Bracket::Brace, ref toks) => {
             let body = parse_field_list(&mut TokenStream::new(toks))?;
-            Ok(Query::Query(vec![Field {
-                name: Name("query".to_owned()),
-                alias: None,
-                args: vec![],
-                fields: body,
-            }]))
+            Ok(Query::Query(vec![
+                Field {
+                    name: Name("query".to_owned()),
+                    alias: None,
+                    args: vec![],
+                    fields: body,
+                },
+            ]))
         }
         _ => parse_err!("Unexpected token, expected: identifier or `{`"),
     }
@@ -115,7 +119,6 @@ fn maybe_parse_fields(stream: &mut TokenStream) -> QlResult<Vec<Field>> {
     stream.maybe_parse_seq(Bracket::Brace, parse_field_list)
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -134,10 +137,27 @@ mod test {
         let tokens = tokenise("null \"foo\" 42 bar [null, null, foo, \"bar\"]").unwrap();
         let mut ts = TokenStream::new(&tokens);
         assert_eq!(parse_value(&mut ts).unwrap(), Value::Null);
-        assert_eq!(parse_value(&mut ts).unwrap(), Value::String("foo".to_owned()));
-        assert_eq!(parse_value(&mut ts).unwrap(), Value::Name(Name("42".to_owned())));
-        assert_eq!(parse_value(&mut ts).unwrap(), Value::Name(Name("bar".to_owned())));
-        assert_eq!(parse_value(&mut ts).unwrap(), Value::Array(vec![Value::Null, Value::Null, Value::Name(Name("foo".to_owned())), Value::String("bar".to_owned())]));
+        assert_eq!(
+            parse_value(&mut ts).unwrap(),
+            Value::String("foo".to_owned())
+        );
+        assert_eq!(
+            parse_value(&mut ts).unwrap(),
+            Value::Name(Name("42".to_owned()))
+        );
+        assert_eq!(
+            parse_value(&mut ts).unwrap(),
+            Value::Name(Name("bar".to_owned()))
+        );
+        assert_eq!(
+            parse_value(&mut ts).unwrap(),
+            Value::Array(vec![
+                Value::Null,
+                Value::Null,
+                Value::Name(Name("foo".to_owned())),
+                Value::String("bar".to_owned()),
+            ])
+        );
     }
 
     #[test]
@@ -148,7 +168,13 @@ mod test {
 
         let tokens = tokenise("(x: 42, foo: \"bar\")").unwrap();
         let mut ts = TokenStream::new(&tokens);
-        assert_eq!(maybe_parse_args(&mut ts).unwrap(), vec![(Name("x".to_owned()), Value::Name(Name("42".to_owned()))), (Name("foo".to_owned()), Value::String("bar".to_owned()))]);
+        assert_eq!(
+            maybe_parse_args(&mut ts).unwrap(),
+            vec![
+                (Name("x".to_owned()), Value::Name(Name("42".to_owned()))),
+                (Name("foo".to_owned()), Value::String("bar".to_owned())),
+            ]
+        );
     }
 
     #[test]
@@ -170,51 +196,64 @@ mod test {
             }
         }
 
-        let tokens = tokenise(r"{ a, foo, bar(x: 42)
+        let tokens = tokenise(
+            r"{ a, foo, bar(x: 42)
 
             baz {
                 a
                 b
-            }}").unwrap();
+            }}",
+        ).unwrap();
         let mut ts = TokenStream::new(&tokens);
-        assert_eq!(maybe_parse_fields(&mut ts).unwrap(), vec![
-            name_field("a"),
-            name_field("foo"),
-            Field {
-                name: Name("bar".to_owned()),
-                alias: None,
-                args: vec![(Name("x".to_owned()), Value::Name(Name("42".to_owned())))],
-                fields: vec![],
-            },
-            Field {
-                name: Name("baz".to_owned()),
-                alias: None,
-                args: vec![],
-                fields: vec![name_field("a"), name_field("b")],
-            },
-        ]);
+        assert_eq!(
+            maybe_parse_fields(&mut ts).unwrap(),
+            vec![
+                name_field("a"),
+                name_field("foo"),
+                Field {
+                    name: Name("bar".to_owned()),
+                    alias: None,
+                    args: vec![(Name("x".to_owned()), Value::Name(Name("42".to_owned())))],
+                    fields: vec![],
+                },
+                Field {
+                    name: Name("baz".to_owned()),
+                    alias: None,
+                    args: vec![],
+                    fields: vec![name_field("a"), name_field("b")],
+                },
+            ]
+        );
     }
 
     #[test]
     fn test_parse_query() {
-        let tokens = tokenise(r"{
+        let tokens = tokenise(
+            r"{
           human(id: 1002) {
             name,
             appearsIn,
             id
           }
-        }").unwrap();
+        }",
+        ).unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_operation(&mut ts).unwrap();
         if let Query::Query(fields) = result {
             assert_eq!(fields.len(), 1);
-            assert_eq!(&*fields[0].name.0, "human");
-            assert_eq!(fields[0].args.len(), 1);
-            assert_eq!(&fields[0].args[0], &(Name("id".to_owned()), Value::Name(Name("1002".to_owned()))));
-            assert_eq!(fields[0].fields.len(), 3);
-            assert_eq!(fields[0].fields[0].name.0, "name");
-            assert_eq!(fields[0].fields[1].name.0, "appearsIn");
-            assert_eq!(fields[0].fields[2].name.0, "id");
+            println!("{:?}", fields);
+            assert_eq!(fields[0].name.0, "query");
+            assert_eq!(fields[0].args.len(), 0);
+            assert_eq!(fields[0].fields.len(), 1);
+            assert_eq!(fields[0].fields[0].name.0, "human");
+            assert_eq!(
+                &fields[0].fields[0].args[0],
+                &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
+            );
+            assert_eq!(fields[0].fields[0].fields.len(), 3);
+            assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
+            assert_eq!(fields[0].fields[0].fields[1].name.0, "appearsIn");
+            assert_eq!(fields[0].fields[0].fields[2].name.0, "id");
         } else {
             panic!();
         }

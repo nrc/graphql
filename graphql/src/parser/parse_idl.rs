@@ -1,10 +1,10 @@
 // Parses an IDL representation of a schema.
 
-use {ParseError, QlResult, QlError};
+use {ParseError, QlError, QlResult};
 use parser::lexer::tokenise;
-use parser::parse_base::{none_ok, parse_err, TokenStream, maybe_parse_name};
+use parser::parse_base::{maybe_parse_name, none_ok, parse_err, TokenStream};
 use parser::token::{Atom, Bracket, Token, TokenKind};
-use schema::{Field, Item, Interface, Object, Enum, Type, TypeKind, Schema};
+use schema::{Enum, Field, Interface, Item, Object, Schema, Type, TypeKind};
 use types::Name;
 
 use std::collections::HashMap;
@@ -63,9 +63,7 @@ fn parse_interface(stream: &mut TokenStream) -> QlResult<Interface> {
         }
         _ => return parse_err!("Expected `{`"),
     };
-    Ok(Interface {
-        fields,
-    })
+    Ok(Interface { fields })
 }
 
 fn parse_object(stream: &mut TokenStream) -> QlResult<Object> {
@@ -78,7 +76,7 @@ fn parse_object(stream: &mut TokenStream) -> QlResult<Object> {
                 vec![name]
             }
             _ => vec![],
-        }
+        },
         None => vec![],
     };
     let fields = match stream.next_tok()?.kind {
@@ -87,10 +85,7 @@ fn parse_object(stream: &mut TokenStream) -> QlResult<Object> {
         }
         _ => return parse_err!("Expected `{`"),
     };
-    Ok(Object {
-        implements,
-        fields,
-    })
+    Ok(Object { implements, fields })
 }
 
 fn parse_enum(stream: &mut TokenStream) -> QlResult<Enum> {
@@ -100,14 +95,15 @@ fn parse_enum(stream: &mut TokenStream) -> QlResult<Enum> {
         }
         _ => return parse_err!("Expected `{`"),
     };
-    Ok(Enum {
-        variants,
-    })
+    Ok(Enum { variants })
 }
 
 fn maybe_parse_field(stream: &mut TokenStream) -> QlResult<Option<Field>> {
     let name = none_ok!(maybe_parse_name(stream)?);
-    let args = if let Some(&Token { kind: TokenKind::Tree(Bracket::Paren, ref toks)}) = stream.peek_tok() {
+    let args = if let Some(&Token {
+        kind: TokenKind::Tree(Bracket::Paren, ref toks),
+    }) = stream.peek_tok()
+    {
         stream.bump();
         TokenStream::new(toks).parse_list(maybe_parse_arg)?
     } else {
@@ -115,11 +111,7 @@ fn maybe_parse_field(stream: &mut TokenStream) -> QlResult<Option<Field>> {
     };
     stream.eat(Atom::Colon)?;
     let ty = parse_type(stream)?;
-    Ok(Some(Field {
-        name,
-        args,
-        ty,
-    }))
+    Ok(Some(Field { name, args, ty }))
 }
 
 fn maybe_parse_variant(stream: &mut TokenStream) -> QlResult<Option<Name>> {
@@ -141,16 +133,14 @@ fn parse_type(stream: &mut TokenStream) -> QlResult<Type> {
         TokenKind::Tree(Bracket::Square, ref toks) => {
             Type::array(parse_type(&mut TokenStream::new(toks))?)
         }
-        TokenKind::Atom(Atom::Name(s)) => {
-            Type {
-                kind: match s {
-                    KString::TEXT => TypeKind::String,
-                    KId::TEXT => TypeKind::Id,
-                    _ => TypeKind::Name(Name(s.to_owned())),
-                },
-                nullable: true,
-            }
-        }
+        TokenKind::Atom(Atom::Name(s)) => Type {
+            kind: match s {
+                KString::TEXT => TypeKind::String,
+                KId::TEXT => TypeKind::Id,
+                _ => TypeKind::Name(Name(s.to_owned())),
+            },
+            nullable: true,
+        },
         _ => return parse_err!("Unexpected token, expected type"),
     };
 
@@ -158,21 +148,18 @@ fn parse_type(stream: &mut TokenStream) -> QlResult<Type> {
     loop {
         match stream.peek_tok() {
             None => break,
-            Some(tok) => {
-                match tok.kind {
-                    TokenKind::Atom(Atom::Bang) => {
-                        stream.bump();
-                        result.nullable = false;
-                    }
-                    _ => break,
+            Some(tok) => match tok.kind {
+                TokenKind::Atom(Atom::Bang) => {
+                    stream.bump();
+                    result.nullable = false;
                 }
-            }
+                _ => break,
+            },
         }
     }
 
     Ok(result)
 }
-
 
 trait Keyword {
     const TEXT: &'static str;
@@ -208,7 +195,6 @@ impl Keyword for KId {
     const TEXT: &'static str = "ID";
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -242,7 +228,8 @@ mod test {
 
     #[test]
     fn test_parse_doc() {
-        let tokens = tokenise(r"
+        let tokens = tokenise(
+            r"
             schema {
                 query: Query
             }
@@ -272,7 +259,8 @@ mod test {
                 appearsIn: [Episode]!
                 homePlanet: String
             }
-        ").unwrap();
+        ",
+        ).unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_doc(&mut ts).unwrap();
         assert_eq!(result.items.len(), 5);
@@ -308,7 +296,7 @@ mod test {
                         _ => panic!(),
                     },
                     _ => panic!(),
-                }                
+                }
             }
             _ => panic!(),
         }

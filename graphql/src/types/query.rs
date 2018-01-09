@@ -8,9 +8,9 @@ query {
   }
 }
 */
-use {QlResult, QlError};
+use {QlError, QlResult};
 use parser::parse_query::parse_query;
-use types::{Name, Id, result, schema};
+use types::{result, schema, Id, Name};
 
 // TODO variables, directives
 // TODO rename as Operation
@@ -84,7 +84,10 @@ impl FromValue for String {
         if let Value::String(ref s) = *value {
             Ok(s.clone())
         } else {
-            Err(QlError::LoweringError(format!("{:?}", value), "String".to_owned()))
+            Err(QlError::LoweringError(
+                format!("{:?}", value),
+                "String".to_owned(),
+            ))
         }
     }
 }
@@ -93,7 +96,10 @@ impl FromValue for Id {
         if let Value::Name(ref n) = *value {
             Ok(Id(n.0.clone()))
         } else {
-            Err(QlError::LoweringError(format!("{:?}", value), "Id".to_owned()))
+            Err(QlError::LoweringError(
+                format!("{:?}", value),
+                "Id".to_owned(),
+            ))
         }
     }
 }
@@ -102,7 +108,10 @@ impl FromValue for Name {
         if let Value::Name(ref n) = *value {
             Ok(n.clone())
         } else {
-            Err(QlError::LoweringError(format!("{:?}", value), "Name".to_owned()))
+            Err(QlError::LoweringError(
+                format!("{:?}", value),
+                "Name".to_owned(),
+            ))
         }
     }
 }
@@ -111,7 +120,10 @@ impl<T: FromValue> FromValue for Vec<T> {
         if let Value::Array(ref a) = *value {
             a.iter().map(|x| T::from(x)).collect()
         } else {
-            Err(QlError::LoweringError(format!("{:?}", value), "Array".to_owned()))
+            Err(QlError::LoweringError(
+                format!("{:?}", value),
+                "Array".to_owned(),
+            ))
         }
     }
 }

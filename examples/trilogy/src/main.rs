@@ -6,8 +6,8 @@ extern crate env_logger;
 extern crate graphql;
 extern crate graphql_macros;
 
-use graphql::{QlResult, QlError};
-use graphql::types::{self, Id, Name, query, result, schema};
+use graphql::{QlError, QlResult};
+use graphql::types::{self, query, result, schema, Id, Name};
 use graphql::types::schema::{Reflect, ResolveEnum, ResolveObject};
 use graphql::types::query::FromValue;
 use graphql::types::result::Resolve;
@@ -48,7 +48,7 @@ schema! {
 
 fn main() {
     env_logger::init().unwrap();
-    
+
     let query = "{
       human(id: 1002) {
         name,
@@ -62,7 +62,6 @@ fn main() {
         Err(err) => println!("{:?}", err),
     }
 }
-
 
 struct Service;
 
@@ -124,7 +123,6 @@ ImplQuery!(DbQuery);
 //     }
 // }
 
-
 // TODO remove the below at some point, or replace with the actual output from `schema!`.
 // Currently contains a bunch of TODOs/notes I'd like to keep.
 mod example_generated {
@@ -161,7 +159,7 @@ mod example_generated {
     //                         assert_eq!(field.args.len(), 0);
     //                         let result = self.query()?;
     //                         let result = result.resolve(&field.fields)?;
-                            
+
     //                         // This is a special case where the result doesn't match the query
     //                         results.push((types::Name("data".to_owned()), result));
     //                     }
@@ -232,7 +230,7 @@ mod example_generated {
     //                         let episode: Option<<Self as AbstractQuery>::Episode> = FromValue::from(value)?;
     //                         let result = self.hero(episode)?;
     //                         let result = result.resolve(&field.fields)?;
-                            
+
     //                         results.push((types::Name("hero".to_owned()), result));
     //                     }
     //                     "human" => {
@@ -242,7 +240,7 @@ mod example_generated {
     //                         let id: Id = FromValue::from(value)?;
     //                         let result = self.human(id)?;
     //                         let result = result.resolve(&field.fields)?;
-                            
+
     //                         results.push((types::Name("human".to_owned()), result));
     //                     }
     //                     n => return Err(QlError::ExecutionError(format!("Missing field executor: {}", n))),
@@ -370,7 +368,6 @@ mod example_generated {
     // }
 
     // impl AbstractCharacter for Character {}
-
 
     // pub trait AbstractEpisode: ResolveEnum {}
 
