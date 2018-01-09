@@ -241,16 +241,19 @@ mod test {
         let result = parse_operation(&mut ts).unwrap();
         if let Query::Query(fields) = result {
             assert_eq!(fields.len(), 1);
-            assert_eq!(&*fields[0].name.0, "human");
-            assert_eq!(fields[0].args.len(), 1);
+            println!("{:?}", fields);
+            assert_eq!(fields[0].name.0, "query");
+            assert_eq!(fields[0].args.len(), 0);
+            assert_eq!(fields[0].fields.len(), 1);
+            assert_eq!(fields[0].fields[0].name.0, "human");
             assert_eq!(
-                &fields[0].args[0],
+                &fields[0].fields[0].args[0],
                 &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
             );
-            assert_eq!(fields[0].fields.len(), 3);
-            assert_eq!(fields[0].fields[0].name.0, "name");
-            assert_eq!(fields[0].fields[1].name.0, "appearsIn");
-            assert_eq!(fields[0].fields[2].name.0, "id");
+            assert_eq!(fields[0].fields[0].fields.len(), 3);
+            assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
+            assert_eq!(fields[0].fields[0].fields[1].name.0, "appearsIn");
+            assert_eq!(fields[0].fields[0].fields[2].name.0, "id");
         } else {
             panic!();
         }
