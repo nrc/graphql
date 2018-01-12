@@ -2,6 +2,7 @@
 name = "trilogy"
 version = "0.1.0"
 authors = ["Nick Cameron <ncameron@mozilla.com>"]
+license = "Apache-2.0/MIT"
 
 [dependencies]
 env_logger = "0.4"

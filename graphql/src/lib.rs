@@ -1,14 +1,6 @@
 #![feature(decl_macro)]
 #![feature(associated_type_defaults)]
 
-// Big TODOs
-//
-// end to end test!
-//   proper client
-// schema validation
-// 0.1
-// validation caching
-
 extern crate rls_span;
 
 use std::error::Error;
