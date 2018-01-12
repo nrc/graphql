@@ -1,6 +1,6 @@
 // Parses an IDL representation of a schema.
 
-use {ParseError, QlError, QlResult};
+use QlResult;
 use parser::lexer::tokenise;
 use parser::parse_base::{maybe_parse_name, none_ok, parse_err, TokenStream};
 use parser::token::{Atom, Bracket, Token, TokenKind};
