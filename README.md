@@ -16,7 +16,7 @@ performant servers.
 
 Use the `schema` macro to specify the schema for your server (using IDL):
 
-```
+```rust
 schema! {
     schema {
         query: Query,
@@ -59,7 +59,7 @@ structs, etc.:
 
 TODO these are equivalent to resolvers in the JS frameworks
 
-```
+```rust
 struct MyServer;
 
 impl Root for MyServer {
@@ -104,7 +104,7 @@ You then implement the `abstract` view of the item (e.g., `AbstractHuman` for
 in the implementations of `Root` and `AbstractQuery`, and anywhere else the type
 is used):
 
-```
+```rust
 struct MyHuman {
     id: usize,
     db_table: DbTablePtr,
