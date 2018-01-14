@@ -5,5 +5,5 @@ authors = ["Nick Cameron <ncameron@mozilla.com>"]
 license = "Apache-2.0/MIT"
 
 [dependencies]
-regex = "0.2"
 rls-span = "0.4"
+failure = "0.1"

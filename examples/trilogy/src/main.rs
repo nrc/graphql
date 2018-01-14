@@ -387,7 +387,7 @@ mod example_generated {
     //             "NEWHOPE" => Episode::NEWHOPE,
     //             "EMPIRE" => Episode::EMPIRE,
     //             "JEDI" => Episode::JEDI,
-    //             _ => return Err(QlError::LoweringError(format!("{:?}", value), "Option<Episode>".to_owned())),
+    //             _ => return Err(QlError::TranslationError(format!("{:?}", value), "Option<Episode>".to_owned())),
     //         })
     //     }
     // }

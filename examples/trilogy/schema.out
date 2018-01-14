@@ -407,7 +407,7 @@ impl FromValue for Episode {
             "EMPIRE" => Episode::EMPIRE,
             "JEDI" => Episode::JEDI,
             _ => {
-                return Err(QlError::LoweringError(
+                return Err(QlError::TranslationError(
                     format!("{:?}", value),
                     "Option<Episode>".to_owned(),
                 ))

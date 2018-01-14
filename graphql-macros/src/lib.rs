@@ -206,7 +206,7 @@ impl ir::Enum {
         let expect_str = ident(&format!("\"Option<{}>\"", self.name.0));
         let arms: TokenStream = arms.chain(
             Some(quote!(
-                    _ => return Err(QlError::LoweringError(
+                    _ => return Err(QlError::TranslationError(
                             format!("{:?}", value),
                             $expect_str.to_owned()
                          )),

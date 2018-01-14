@@ -1,6 +1,7 @@
 use {QlError, QlResult};
 use parser::token::{Atom, Bracket, Token, TokenKind};
 
+use std::fmt;
 use std::iter::Peekable;
 use std::mem;
 use std::str::{CharIndices, FromStr};
@@ -21,7 +22,14 @@ pub enum LexError {
     Unmatched(char, char),
 }
 
-// TODO impl display for LexError
+impl fmt::Display for LexError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LexError::Unexpected(c) => writeln!(f, "Unexpected token: {}", c),
+            LexError::Unmatched(expected, found) => writeln!(f, "Unmatched delimiter: expected {}, found {}", expected, found),
+        }
+    }
+}
 
 macro lex_err($kind: ident $(, $body: expr)*) {
     Err(QlError::LexError(LexError::$kind($($body,)*)))

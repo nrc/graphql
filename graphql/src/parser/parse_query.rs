@@ -1,7 +1,7 @@
-use {ParseError, QlError, QlResult};
+use QlResult;
 use parser::lexer::tokenise;
 use parser::parse_base::{maybe_parse_name, none_ok, parse_err, TokenStream};
-use parser::token::{Atom, Bracket, Token, TokenKind};
+use parser::token::{Atom, Bracket, TokenKind};
 use query::{Field, Query, Value};
 use types::Name;
 

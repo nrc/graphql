@@ -1,10 +1,11 @@
 // Code which is shared between the IDL and query parsers
 
-use {ParseError, QlError, QlResult};
-use parser::lexer::tokenise;
+use {QlError, QlResult};
 use parser::token::{Atom, Bracket, Token, TokenKind};
-use schema::{Enum, Field, Interface, Item, Object, Schema, Type};
 use types::Name;
+
+#[derive(Debug)]
+pub struct ParseError(pub &'static str);
 
 pub struct TokenStream<'a> {
     tokens: &'a [Token<'a>],
