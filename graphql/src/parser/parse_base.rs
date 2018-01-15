@@ -125,6 +125,7 @@ pub macro none_ok($e: expr) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::lexer::tokenise;
 
     #[test]
     fn test_bump() {
