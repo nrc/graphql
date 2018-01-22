@@ -1,5 +1,5 @@
 use {QlError, QlResult};
-use query::{Field, Query, Value};
+use query::{Field, Operation, Value};
 use schema::{self, Schema};
 use types::Name;
 
@@ -8,14 +8,14 @@ use std::collections::HashSet;
 // QUESTION: we do a lot of lookups in lists, these are O(n) where hashing is O(1)
 // however, n is usually pretty small. Is it worth using hashing?
 
-pub fn validate_query(query: &Query, schema: &Schema) -> QlResult<()> {
+pub fn validate_query(query: &Operation, schema: &Schema) -> QlResult<()> {
     let mut ctx = Context::new(schema);
 
     match *query {
-        Query::Query(ref fields) => {
+        Operation::Query(ref fields) => {
             validate_fields(fields, &schema.items[&Name("schema".to_owned())], &mut ctx);
         }
-        Query::Mutation => unimplemented!(),
+        Operation::Mutation => unimplemented!(),
     }
 
     if ctx.errors.is_empty() {

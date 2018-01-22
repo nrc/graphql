@@ -2,16 +2,16 @@ use QlResult;
 use parser::lexer::tokenise;
 use parser::parse_base::{maybe_parse_name, none_ok, parse_err, TokenStream};
 use parser::token::{Atom, Bracket, TokenKind};
-use query::{Field, Query, Value};
+use query::{Field, Operation, Value};
 use types::Name;
 
-pub fn parse_query(input: &str) -> QlResult<Query> {
+pub fn parse_query(input: &str) -> QlResult<Operation> {
     let tokens = tokenise(input.trim())?;
     let mut stream = TokenStream::new(&tokens);
     parse_operation(&mut stream)
 }
 
-fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
+fn parse_operation(stream: &mut TokenStream) -> QlResult<Operation> {
     match stream.next_tok()?.kind {
         // TODO abstract out keywords
         TokenKind::Atom(Atom::Name(n)) if n == "query" => {
@@ -21,7 +21,7 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
                 }
                 _ => return parse_err!("Unexpected token, expected: `{`"),
             };
-            Ok(Query::Query(vec![
+            Ok(Operation::Query(vec![
                 Field {
                     name: Name("query".to_owned()),
                     alias: None,
@@ -32,11 +32,11 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Query> {
         }
         TokenKind::Atom(Atom::Name(n)) if n == "mutation" => {
             // TODO parse the body of the mutation
-            Ok(Query::Mutation)
+            Ok(Operation::Mutation)
         }
         TokenKind::Tree(Bracket::Brace, ref toks) => {
             let body = parse_field_list(&mut TokenStream::new(toks))?;
-            Ok(Query::Query(vec![
+            Ok(Operation::Query(vec![
                 Field {
                     name: Name("query".to_owned()),
                     alias: None,
@@ -239,7 +239,7 @@ mod test {
         ).unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_operation(&mut ts).unwrap();
-        if let Query::Query(fields) = result {
+        if let Operation::Query(fields) = result {
             assert_eq!(fields.len(), 1);
             println!("{:?}", fields);
             assert_eq!(fields[0].name.0, "query");

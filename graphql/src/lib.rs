@@ -35,9 +35,9 @@ pub enum QlError {
     ResolveError(&'static str, String, Option<String>),
 }
 
-pub fn handle_query<R: query::Root>(query: &str, root: R) -> QlResult<result::Value> {
+pub fn handle_query<R: query::Root>(input: &str, root: R) -> QlResult<result::Value> {
     let schema = &R::schema();
-    let query = query::Query::parse(query)?;
+    let query = query::Operation::parse(input)?;
     query.validate(schema)?;
     query.execute(schema, root)
 }

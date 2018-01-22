@@ -10,7 +10,7 @@ proc-macro = true
 [dependencies]
 log = "0.4"
 graphql = { path = "../graphql" }
-rustfmt-nightly = { git = "https://github.com/rust-lang-nursery/rustfmt" , optional = true }
+rustfmt-nightly = { version = "0.3" , optional = true }
 
 [features]
 default = []

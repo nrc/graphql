@@ -13,9 +13,8 @@ use parser::parse_query::parse_query;
 use types::{result, schema, Id, Name};
 
 // TODO variables, directives
-// TODO rename as Operation
 #[derive(Clone, Debug)]
-pub enum Query {
+pub enum Operation {
     Query(Vec<Field>),
     // TODO
     Mutation,
@@ -43,8 +42,8 @@ pub trait Root: result::Resolve {
     fn schema() -> schema::Schema;
 }
 
-impl Query {
-    pub fn parse(input: &str) -> QlResult<Query> {
+impl Operation {
+    pub fn parse(input: &str) -> QlResult<Operation> {
         parse_query(input)
     }
 
@@ -57,7 +56,7 @@ impl Query {
     // TODO don't need schema to execute?
     pub fn execute<R: Root>(&self, _schema: &schema::Schema, root: R) -> QlResult<result::Value> {
         match *self {
-            Query::Query(ref fields) => root.resolve(fields),
+            Operation::Query(ref fields) => root.resolve(fields),
             _ => unimplemented!(),
         }
     }
