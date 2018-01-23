@@ -9,8 +9,13 @@ query {
 }
 */
 use {QlError, QlResult};
+use execution::Context;
 use parser::parse_query::parse_query;
 use types::{result, schema, Id, Name};
+
+use std::collections::HashMap;
+
+pub type Variables = HashMap<String, Value>;
 
 // TODO variables, directives
 #[derive(Clone, Debug)]
@@ -54,7 +59,9 @@ impl Operation {
     }
 
     // TODO don't need schema to execute?
-    pub fn execute<R: Root>(&self, _schema: &schema::Schema, root: R) -> QlResult<result::Value> {
+    pub fn execute<R: Root>(&self, variables: Variables, _schema: &schema::Schema, root: R) -> QlResult<result::Value> {
+        let ctxt = Context::new(variables);
+        // TODO use ctxt
         match *self {
             Operation::Query(ref fields) => root.resolve(fields),
             _ => unimplemented!(),

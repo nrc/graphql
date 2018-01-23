@@ -14,6 +14,8 @@ use graphql::types::result::Resolve;
 
 use graphql_macros::schema;
 
+use std::collections::HashMap;
+
 schema! {
     schema {
         query: Query,
@@ -57,7 +59,7 @@ fn main() {
       }
     }";
 
-    match graphql::handle_query(query, Service) {
+    match graphql::handle_query(query, HashMap::new(), Service) {
         Ok(result) => println!("{}", result),
         Err(err) => println!("{:?}", err),
     }

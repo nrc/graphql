@@ -1,4 +1,5 @@
 use QlResult;
+use query::Variables;
 use types::{query, result, schema};
 
 pub fn select_fields<O: schema::ResolveObject>(
@@ -11,4 +12,14 @@ pub fn select_fields<O: schema::ResolveObject>(
             .map(|f| Ok((f.name.clone(), object.resolve_field(f)?)))
             .collect::<QlResult<Vec<_>>>()?,
     }))
+}
+
+pub struct Context {
+    variables: Variables,
+}
+
+impl Context {
+    pub fn new(variables: Variables) -> Context {
+        Context { variables }
+    }
 }
