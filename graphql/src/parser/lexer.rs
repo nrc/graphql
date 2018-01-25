@@ -62,6 +62,7 @@ impl<'a> Lexer<'a> {
             }
 
             match c {
+                '#' => self.comment(i),
                 '{' => self.open_bracket(Bracket::Brace),
                 br @ '}' | br @ ']' | br @ ')' => self.close_bracket(br)?,
                 '[' => self.open_bracket(Bracket::Square),
@@ -127,6 +128,10 @@ impl<'a> Lexer<'a> {
             //span: panic!(), // TODO
         };
         self.result.push(token);
+    }
+
+    fn comment(&mut self, start: usize) {
+        self.read_while(start, |c| c != '\n');
     }
 
     fn read_while<F>(&mut self, start: usize, f: F) -> &'a str
@@ -277,6 +282,34 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_query_with_comments() {
+        let input = r"{
+          # A comment
+          human(id: 1002) {
+            name # field comment
+            appearsIn
+            id
+          }
+        }";
+
+        let expected = r"{
+
+          human(id: 1002) {
+            name
+            appearsIn
+            id
+          }
+        }";
+        let lexer = Lexer::new(input);
+        let result = lexer.tokenise().unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(
+            result[0].to_string().replace(' ', ""),
+            expected.replace(' ', "")
+        );
+    }
+
     // TODO test: errors
 
     fn assert_number(tok: &Token) -> isize {
@@ -296,7 +329,7 @@ mod test {
     fn assert_string<'a>(tok: &Token<'a>) -> &'a str {
         match assert_atom(tok) {
             Atom::String(s) => s,
-            _ => panic!("Non-string token, expected name"),
+            _ => panic!("Non-string token, expected string"),
         }
     }
 

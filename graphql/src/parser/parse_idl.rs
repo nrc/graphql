@@ -235,6 +235,7 @@ mod test {
             }
 
             type Query {
+                # The query root of the Star Wars GraphQL interface.
                 hero(episode: Episode): Character
                 human(id : ID!): Human
             }
