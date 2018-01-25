@@ -7,6 +7,7 @@ use types::Name;
 #[derive(Debug)]
 pub struct ParseError(pub &'static str);
 
+#[derive(Debug)]
 pub struct TokenStream<'a> {
     tokens: &'a [Token<'a>],
 }
