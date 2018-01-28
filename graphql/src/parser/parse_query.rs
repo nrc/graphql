@@ -70,15 +70,23 @@ fn parse_value(stream: &mut TokenStream) -> QlResult<Value> {
     stream.expect(maybe_parse_value)
 }
 
-// Name (args)? { field list }?
+// Name (: Name)? (args)? { field list }?
 fn maybe_parse_field(stream: &mut TokenStream) -> QlResult<Option<Field>> {
-    let name = none_ok!(maybe_parse_name(stream)?);
+    let name_or_alias = none_ok!(maybe_parse_name(stream)?);
+    let (alias, name) = match none_ok!(stream.peek_tok()).kind {
+        TokenKind::Atom(Atom::Colon) => {
+            stream.bump();
+            (Some(name_or_alias), parse_name(stream)?)
+        },
+        _ => (None, name_or_alias)
+    };
+
     let args = maybe_parse_args(stream)?;
     let fields = maybe_parse_fields(stream)?;
 
     Ok(Some(Field {
         name,
-        alias: None,
+        alias,
         args,
         fields,
     }))
@@ -243,6 +251,7 @@ mod test {
             assert_eq!(fields.len(), 1);
             println!("{:?}", fields);
             assert_eq!(fields[0].name.0, "query");
+            assert_eq!(fields[0].alias, None);
             assert_eq!(fields[0].args.len(), 0);
             assert_eq!(fields[0].fields.len(), 1);
             assert_eq!(fields[0].fields[0].name.0, "human");
@@ -252,8 +261,39 @@ mod test {
             );
             assert_eq!(fields[0].fields[0].fields.len(), 3);
             assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
+            assert_eq!(fields[0].fields[0].fields[0].alias, None);
             assert_eq!(fields[0].fields[0].fields[1].name.0, "appearsIn");
+            assert_eq!(fields[0].fields[0].fields[1].alias, None);
             assert_eq!(fields[0].fields[0].fields[2].name.0, "id");
+            assert_eq!(fields[0].fields[0].fields[2].alias, None);
+        } else {
+            panic!();
+        }
+    }
+
+    #[test]
+    fn test_parse_query_with_alias() {
+        let tokens = tokenise(r"{
+          character: human(id: 1002) {
+            called: name
+          }
+        }").unwrap();
+        let mut ts = TokenStream::new(&tokens);
+        let result = parse_operation(&mut ts).unwrap();
+        if let Operation::Query(fields) = result {
+            assert_eq!(fields.len(), 1);
+            assert_eq!(fields[0].name.0, "query");
+            assert_eq!(fields[0].args.len(), 0);
+            assert_eq!(fields[0].fields.len(), 1);
+            assert_eq!(fields[0].fields[0].name.0, "human");
+            assert_eq!(fields[0].fields[0].alias, Some(Name("character".to_owned())));
+            assert_eq!(
+                &fields[0].fields[0].args[0],
+                &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
+            );
+            assert_eq!(fields[0].fields[0].fields.len(), 1);
+            assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
+            assert_eq!(fields[0].fields[0].fields[0].alias, Some(Name("called".to_owned())));
         } else {
             panic!();
         }
