@@ -1,0 +1,9 @@
+[package]
+name = "graphql-tests"
+version = "0.1.0"
+authors = ["Nick Cameron <ncameron@mozilla.com>"]
+license = "Apache-2.0/MIT"
+
+[dependencies]
+graphql = { path = "../graphql" }
+graphql-macros = { path = "../graphql-macros", features=["rustfmt"] }
