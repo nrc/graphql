@@ -2,5 +2,6 @@
 members = [
     "graphql",
     "graphql-macros",
+    "graphql-tests",
     "examples/trilogy",
 ]
