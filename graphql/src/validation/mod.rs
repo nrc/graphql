@@ -13,7 +13,7 @@ pub fn validate_query(query: &Operation, schema: &Schema) -> QlResult<()> {
 
     match *query {
         Operation::Query(ref f) => {
-            validate_fields(&f.fields, &schema.items[&Name("schema".to_owned())], &mut ctx);
+            validate_field(f, schema.items[&Name("schema".to_owned())].assert_field(Name("query".to_owned())), &mut ctx);
         }
         Operation::Mutation => unimplemented!(),
     }

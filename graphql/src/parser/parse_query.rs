@@ -276,14 +276,13 @@ mod test {
         let mut ts = TokenStream::new(&tokens);
         let result = parse_operation(&mut ts).unwrap();
         if let Operation::Query(f) = result {
-            assert_eq!(fields.len(), 1);
             assert_eq!(f.name.0, "query");
             assert_eq!(f.args.len(), 0);
             assert_eq!(f.fields.len(), 1);
             assert_eq!(f.fields[0].name.0, "human");
             assert_eq!(f.fields[0].alias, Some(Name("character".to_owned())));
             assert_eq!(
-                &fields[0].fields[0].args[0],
+                &f.fields[0].args[0],
                 &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
             );
             assert_eq!(f.fields[0].fields.len(), 1);

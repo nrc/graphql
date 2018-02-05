@@ -62,6 +62,10 @@ impl Item {
             Item::Enum(_) => &[],
         }
     }
+
+    pub fn assert_field(&self, name: Name) -> &Field {
+        self.fields().iter().find(|f| f.name == name).expect("Missing field")
+    }
 }
 
 #[derive(Clone, Debug)]

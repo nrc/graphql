@@ -63,7 +63,8 @@ impl Operation {
         let ctxt = Context::new(variables, self.get_field().clone());
         // TODO use ctxt
         match *self {
-            Operation::Query(ref f) => root.resolve(&f.fields),
+            // TODO change resolve sig to just take a single field.
+            Operation::Query(ref f) => root.resolve(&[f.clone()]),
             _ => unimplemented!(),
         }
     }
