@@ -20,7 +20,7 @@ pub type Variables = HashMap<String, Value>;
 // TODO variables, directives
 #[derive(Clone, Debug)]
 pub enum Operation {
-    Query(Vec<Field>),
+    Query(Field),
     // TODO
     Mutation,
 }
@@ -60,11 +60,18 @@ impl Operation {
 
     // TODO don't need schema to execute?
     pub fn execute<R: Root>(&self, variables: Variables, _schema: &schema::Schema, root: R) -> QlResult<result::Value> {
-        let ctxt = Context::new(variables);
+        let ctxt = Context::new(variables, self.get_field().clone());
         // TODO use ctxt
         match *self {
-            Operation::Query(ref fields) => root.resolve(fields),
+            Operation::Query(ref f) => root.resolve(&f.fields),
             _ => unimplemented!(),
+        }
+    }
+
+    pub fn get_field(&self) -> &Field {
+        match *self {
+            Operation::Query(ref f) => f,
+            Operation::Mutation => unreachable!(),
         }
     }
 }

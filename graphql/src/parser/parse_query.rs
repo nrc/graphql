@@ -21,14 +21,12 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Operation> {
                 }
                 _ => return parse_err!("Unexpected token, expected: `{`"),
             };
-            Ok(Operation::Query(vec![
-                Field {
-                    name: Name("query".to_owned()),
-                    alias: None,
-                    args: vec![],
-                    fields: body,
-                },
-            ]))
+            Ok(Operation::Query(Field {
+                name: Name("query".to_owned()),
+                alias: None,
+                args: vec![],
+                fields: body,
+            }))
         }
         TokenKind::Atom(Atom::Name(n)) if n == "mutation" => {
             // TODO parse the body of the mutation
@@ -36,14 +34,12 @@ fn parse_operation(stream: &mut TokenStream) -> QlResult<Operation> {
         }
         TokenKind::Tree(Bracket::Brace, ref toks) => {
             let body = parse_field_list(&mut TokenStream::new(toks))?;
-            Ok(Operation::Query(vec![
-                Field {
-                    name: Name("query".to_owned()),
-                    alias: None,
-                    args: vec![],
-                    fields: body,
-                },
-            ]))
+            Ok(Operation::Query(Field {
+                name: Name("query".to_owned()),
+                alias: None,
+                args: vec![],
+                fields: body,
+            }))
         }
         _ => parse_err!("Unexpected token, expected: identifier or `{`"),
     }
@@ -247,25 +243,24 @@ mod test {
         ).unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_operation(&mut ts).unwrap();
-        if let Operation::Query(fields) = result {
-            assert_eq!(fields.len(), 1);
-            println!("{:?}", fields);
-            assert_eq!(fields[0].name.0, "query");
-            assert_eq!(fields[0].alias, None);
-            assert_eq!(fields[0].args.len(), 0);
-            assert_eq!(fields[0].fields.len(), 1);
-            assert_eq!(fields[0].fields[0].name.0, "human");
+        if let Operation::Query(f) = result {
+            println!("{:?}", f);
+            assert_eq!(f.name.0, "query");
+            assert_eq!(f.alias, None);
+            assert_eq!(f.args.len(), 0);
+            assert_eq!(f.fields.len(), 1);
+            assert_eq!(f.fields[0].name.0, "human");
             assert_eq!(
-                &fields[0].fields[0].args[0],
+                &f.fields[0].args[0],
                 &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
             );
-            assert_eq!(fields[0].fields[0].fields.len(), 3);
-            assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
-            assert_eq!(fields[0].fields[0].fields[0].alias, None);
-            assert_eq!(fields[0].fields[0].fields[1].name.0, "appearsIn");
-            assert_eq!(fields[0].fields[0].fields[1].alias, None);
-            assert_eq!(fields[0].fields[0].fields[2].name.0, "id");
-            assert_eq!(fields[0].fields[0].fields[2].alias, None);
+            assert_eq!(f.fields[0].fields.len(), 3);
+            assert_eq!(f.fields[0].fields[0].name.0, "name");
+            assert_eq!(f.fields[0].fields[0].alias, None);
+            assert_eq!(f.fields[0].fields[1].name.0, "appearsIn");
+            assert_eq!(f.fields[0].fields[1].alias, None);
+            assert_eq!(f.fields[0].fields[2].name.0, "id");
+            assert_eq!(f.fields[0].fields[2].alias, None);
         } else {
             panic!();
         }
@@ -280,20 +275,20 @@ mod test {
         }").unwrap();
         let mut ts = TokenStream::new(&tokens);
         let result = parse_operation(&mut ts).unwrap();
-        if let Operation::Query(fields) = result {
+        if let Operation::Query(f) = result {
             assert_eq!(fields.len(), 1);
-            assert_eq!(fields[0].name.0, "query");
-            assert_eq!(fields[0].args.len(), 0);
-            assert_eq!(fields[0].fields.len(), 1);
-            assert_eq!(fields[0].fields[0].name.0, "human");
-            assert_eq!(fields[0].fields[0].alias, Some(Name("character".to_owned())));
+            assert_eq!(f.name.0, "query");
+            assert_eq!(f.args.len(), 0);
+            assert_eq!(f.fields.len(), 1);
+            assert_eq!(f.fields[0].name.0, "human");
+            assert_eq!(f.fields[0].alias, Some(Name("character".to_owned())));
             assert_eq!(
                 &fields[0].fields[0].args[0],
                 &(Name("id".to_owned()), Value::Name(Name("1002".to_owned())))
             );
-            assert_eq!(fields[0].fields[0].fields.len(), 1);
-            assert_eq!(fields[0].fields[0].fields[0].name.0, "name");
-            assert_eq!(fields[0].fields[0].fields[0].alias, Some(Name("called".to_owned())));
+            assert_eq!(f.fields[0].fields.len(), 1);
+            assert_eq!(f.fields[0].fields[0].name.0, "name");
+            assert_eq!(f.fields[0].fields[0].alias, Some(Name("called".to_owned())));
         } else {
             panic!();
         }

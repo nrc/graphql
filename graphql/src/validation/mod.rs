@@ -12,8 +12,8 @@ pub fn validate_query(query: &Operation, schema: &Schema) -> QlResult<()> {
     let mut ctx = Context::new(schema);
 
     match *query {
-        Operation::Query(ref fields) => {
-            validate_fields(fields, &schema.items[&Name("schema".to_owned())], &mut ctx);
+        Operation::Query(ref f) => {
+            validate_fields(&f.fields, &schema.items[&Name("schema".to_owned())], &mut ctx);
         }
         Operation::Mutation => unimplemented!(),
     }

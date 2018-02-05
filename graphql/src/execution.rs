@@ -1,5 +1,5 @@
 use QlResult;
-use query::Variables;
+use query::{Field, Variables};
 use types::{query, result, schema};
 
 pub fn select_fields<O: schema::ResolveObject>(
@@ -16,10 +16,14 @@ pub fn select_fields<O: schema::ResolveObject>(
 
 pub struct Context {
     variables: Variables,
+    query: Field,
 }
 
 impl Context {
-    pub fn new(variables: Variables) -> Context {
-        Context { variables }
+    pub fn new(variables: Variables, query: Field) -> Context {
+        Context {
+            variables,
+            query,
+        }
     }
 }
